@@ -1,9 +1,13 @@
 package com.example.timetableapp
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -14,19 +18,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Ensure these imports match your actual folder names.
-// Note: If you renamed 'EditTimetable' to 'edittimetable' to fix the warning, update here.
 import com.example.timetableapp.EditTimetable.EditTimetableScreen
 import com.example.timetableapp.homepage.HomepageInterface
 import com.example.timetableapp.SubjectView.SubjectInterface
 import com.example.timetableapp.generatetable.GenerateTimetableInterface
 import com.example.timetableapp.TimetableView.TimetableViewScreen
 
-// SHARED DATA CLASS
+// Shared data structure
 data class TimetableEntry(
     val subject: String,
     val lecturer: String,
@@ -37,104 +42,137 @@ data class TimetableEntry(
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        val storage = TimetableStorage(this)
+
         setContent {
+            // GLOBAL STATE
+            var isDarkMode by remember { mutableStateOf(false) }
             var currentScreen by remember { mutableStateOf("front") }
+            val context = LocalContext.current
 
-            // Using mutableStateListOf ensures the UI observes additions/replacements
-            val userSchedule = remember { mutableStateListOf<TimetableEntry>() }
+            // Dynamic Overlay color for background
+            val overlayColor = if (isDarkMode) Color.Black.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.2f)
 
-            // State to hold the specific item being edited
+            val userSchedule = remember {
+                mutableStateListOf<TimetableEntry>().apply {
+                    addAll(storage.loadSchedule())
+                }
+            }
+
             var entryToEdit by remember { mutableStateOf<TimetableEntry?>(null) }
-
-            // Critical for ensuring the correct index is replaced in the list
             var editIndex by remember { mutableIntStateOf(-1) }
 
-            val chalkboardGreen = Color(0xFF4B6E63)
+            // 1. Root Box to hold the Background Image globally
+            Box(modifier = Modifier.fillMaxSize()) {
 
-            Surface(modifier = Modifier.fillMaxSize(), color = chalkboardGreen) {
-                when (currentScreen) {
-                    "front" -> {
-                        TimetableInterface(onGenerateClick = { currentScreen = "home" })
-                    }
+                // 2. Global Background Image (Visible on all screens)
+                Image(
+                    painter = painterResource(id = R.drawable.background),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
 
-                    "home" -> {
-                        HomepageInterface(
-                            onGenerateNavClick = { currentScreen = "generate" },
-                            onEditNavClick = {
-                                if (userSchedule.isNotEmpty()) {
-                                    // Set tracking to the first item for editing
-                                    editIndex = 0
-                                    entryToEdit = userSchedule[editIndex]
-                                    currentScreen = "edit"
-                                } else {
-                                    // Provide a placeholder if the list is empty
-                                    editIndex = -1
-                                    entryToEdit = TimetableEntry("New Subject", "Lecturer", "30m", "MON 08.00")
-                                    currentScreen = "edit"
-                                }
-                            },
-                            onSubjectNavClick = { currentScreen = "subject" },
-                            onTimetableClick = { currentScreen = "view_timetable" }
-                        )
-                    }
+                // 3. Global Dark Mode Overlay
+                Box(modifier = Modifier.fillMaxSize().background(overlayColor))
 
-                    "generate" -> {
-                        GenerateTimetableInterface(
-                            onBackClick = { currentScreen = "home" },
-                            onAddEntry = { newEntry -> userSchedule.add(newEntry) },
-                            onGenerateAutomatically = { currentScreen = "view_timetable" }
-                        )
-                    }
+                // 4. Content Surface (Must be Transparent to see the image)
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color.Transparent // This lets the image show through
+                ) {
+                    when (currentScreen) {
+                        "front" -> {
+                            TimetableInterface(onGenerateClick = { currentScreen = "home" })
+                        }
 
-                    "edit" -> {
-                        // Using a local val to ensure thread safety during composition
-                        val currentEntry = entryToEdit
-                        if (currentEntry != null) {
-                            EditTimetableScreen(
-                                entryToEdit = currentEntry,
-                                onUpdateClick = { updatedEntry: TimetableEntry ->
-                                    // UPDATE LOGIC: Replace at specific index to ensure persistence
-                                    if (editIndex != -1 && editIndex < userSchedule.size) {
-                                        userSchedule[editIndex] = updatedEntry
+                        "home" -> {
+                            HomepageInterface(
+                                isDarkMode = isDarkMode,
+                                onDarkModeToggle = { isDarkMode = !isDarkMode },
+                                onGenerateNavClick = { currentScreen = "generate" },
+                                onEditNavClick = {
+                                    if (userSchedule.isNotEmpty()) {
+                                        editIndex = 0
+                                        entryToEdit = userSchedule[editIndex]
+                                        currentScreen = "edit"
                                     } else {
-                                        userSchedule.add(updatedEntry)
+                                        editIndex = -1
+                                        entryToEdit = TimetableEntry("New Subject", "Lecturer", "30m", "MON 08.00")
+                                        currentScreen = "edit"
                                     }
-
-                                    // Reset editing state and navigate to view the results
-                                    entryToEdit = null
-                                    editIndex = -1
-                                    currentScreen = "view_timetable"
                                 },
-                                onCancelClick = {
-                                    entryToEdit = null
-                                    editIndex = -1
-                                    currentScreen = "home"
+                                onSubjectNavClick = { currentScreen = "subject" },
+                                onTimetableClick = { currentScreen = "view_timetable" },
+                                onResetConfirm = {
+                                    storage.clearSchedule()
+                                    userSchedule.clear()
+                                    currentScreen = "front"
+                                    Toast.makeText(context, "Timetable Reset Successfully", Toast.LENGTH_SHORT).show()
                                 }
                             )
-                        } else {
-                            currentScreen = "home"
                         }
-                    }
 
-                    "subject" -> {
-                        SubjectInterface(onBackClick = { currentScreen = "home" })
-                    }
+                        "generate" -> {
+                            GenerateTimetableInterface(
+                                onBackClick = { currentScreen = "home" },
+                                onAddEntry = { newEntry ->
+                                    userSchedule.add(newEntry)
+                                    storage.saveSchedule(userSchedule.toList())
+                                },
+                                onGenerateAutomatically = {
+                                    storage.saveSchedule(userSchedule.toList())
+                                    currentScreen = "view_timetable"
+                                }
+                            )
+                        }
 
-                    "view_timetable" -> {
-                        TimetableViewScreen(
-                            // .toList() forces a UI refresh by providing a new list instance
-                            scheduleData = userSchedule.toList(),
-                            onBackClick = { currentScreen = "home" }
-                        )
+                        "edit" -> {
+                            val currentEntry = entryToEdit
+                            if (currentEntry != null) {
+                                EditTimetableScreen(
+                                    entryToEdit = currentEntry,
+                                    onUpdateClick = { updatedEntry: TimetableEntry ->
+                                        if (editIndex != -1 && editIndex < userSchedule.size) {
+                                            userSchedule[editIndex] = updatedEntry
+                                        } else {
+                                            userSchedule.add(updatedEntry)
+                                        }
+                                        storage.saveSchedule(userSchedule.toList())
+                                        entryToEdit = null
+                                        editIndex = -1
+                                        currentScreen = "view_timetable"
+                                    },
+                                    onCancelClick = {
+                                        entryToEdit = null
+                                        editIndex = -1
+                                        currentScreen = "home"
+                                    }
+                                )
+                            } else {
+                                currentScreen = "home"
+                            }
+                        }
+
+                        "subject" -> {
+                            SubjectInterface(onBackClick = { currentScreen = "home" })
+                        }
+
+                        "view_timetable" -> {
+                            TimetableViewScreen(
+                                scheduleData = userSchedule.toList(),
+                                onBackClick = { currentScreen = "home" }
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
-
-// --- GLOBAL UI COMPONENTS ---
 
 @Composable
 fun TimetableInterface(onGenerateClick: () -> Unit) {
@@ -169,13 +207,14 @@ fun TimetableInterface(onGenerateClick: () -> Unit) {
 
 @Composable
 fun ScallopedHeader() {
-    Canvas(modifier = Modifier.fillMaxWidth().height(90.dp)) {
-        drawRect(Color.White, size = size.copy(height = size.height * 0.4f))
+    Canvas(modifier = Modifier.fillMaxWidth().height(70.dp)) {
+        val headerColor = Color.White.copy(alpha = 0.85f)
+        drawRect(headerColor, size = size.copy(height = size.height * 0.4f))
         val circleCount = 10
         val radius = size.width / circleCount
         for (i in 0..circleCount) {
             drawCircle(
-                color = Color.White,
+                color = headerColor,
                 radius = radius / 1.1f,
                 center = Offset(x = (size.width / circleCount) * i, y = size.height * 0.4f)
             )

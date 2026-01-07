@@ -3,6 +3,7 @@ package com.example.timetableapp.TimetableView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,7 +54,6 @@ fun TimetableViewScreen(
                 if (isWeeklyView) {
                     WeeklyTableLayout(scheduleData)
                 } else {
-                    // Calls the function from your DailyView.kt
                     DailyListLayout(scheduleData)
                 }
             }
@@ -70,7 +70,7 @@ fun TimetableViewScreen(
                 Text(
                     text = if (isWeeklyView) "Switch to Daily" else "Switch to Weekly",
                     color = Color.White,
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -94,11 +94,10 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(8.dp))
+            .background(Color.White.copy(alpha = 0.95f), RoundedCornerShape(8.dp))
             .padding(6.dp)
             .border(1.dp, Color.Black, RoundedCornerShape(8.dp))
     ) {
-        // Headers
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
             days.forEach { day ->
                 Text(
@@ -106,7 +105,8 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
+                    color = Color.Black
                 )
             }
         }
@@ -116,18 +116,17 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
                 TimetableRow(time = morningSlots[index], scheduleData = scheduleData)
             }
 
-            // Fixed REHAT bar across the whole table
             item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp, horizontal = 2.dp)
                         .height(30.dp)
-                        .background(Color(0xFFE0E0E0), RoundedCornerShape(20.dp))
-                        .border(1.dp, Color.Black, RoundedCornerShape(20.dp)),
+                        .background(Color(0xFFD1D1D1), RoundedCornerShape(4.dp))
+                        .border(0.5.dp, Color.Black, RoundedCornerShape(4.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("REHAT", fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                    Text("REHAT", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.DarkGray)
                 }
             }
 
@@ -141,32 +140,50 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
 @Composable
 fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
     val dayHeaders = listOf("SUN", "MON", "TUE", "WED", "THU")
-    val cellColor = Color(0xFFF5E6D3)
+    val cellBgColor = Color(0xFFFDF5E6)
 
-    Row(modifier = Modifier.fillMaxWidth().height(60.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(65.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text(
             text = time,
             modifier = Modifier.weight(1f),
             fontSize = 9.sp,
             textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
         )
 
         dayHeaders.forEach { day ->
-            // Logic for fixed Perhimpunan or user data
             val isPerhimpunan = day == "MON" && time == "7.30-8.00"
+
             val entry = if (isPerhimpunan) {
-                TimetableEntry(
-                    "Perhimpunan",
-                    "Tapak",
-                    time,
-                    "MON $time",
-                    R.drawable.perhimpunan_icon
-                )
+                TimetableEntry("Perhimpunan", "Tapak", time, "MON $time", R.drawable.perhimpunan_icon)
             } else {
-                scheduleData.find {
-                    it.dayAndTime.uppercase().contains(day) &&
-                            (it.dayAndTime.contains(time) || it.dayAndTime.contains(time.replace(".", ":")))
+                scheduleData.find { item ->
+                    // 1. Check if Day matches
+                    val dayMatch = item.dayAndTime.uppercase().contains(day)
+
+                    // 2. Normalization Function to match generated data with grid slots
+                    fun normalize(t: String): String {
+                        return t.uppercase()
+                            .replace(" AM", "")
+                            .replace(" PM", "")
+                            .replace(":", ".")
+                            .split("-")[0] // Extract start time
+                            .trim()
+                    }
+
+                    val savedTime = normalize(item.dayAndTime.split(" ").lastOrNull() ?: "")
+                    val slotStart = normalize(time)
+
+                    // 3. Match if Day matches AND normalized times match (accounting for leading zeros)
+                    dayMatch && (
+                            savedTime == slotStart ||
+                                    "0$savedTime" == slotStart ||
+                                    savedTime == "0$slotStart"
+                            )
                 }
             }
 
@@ -175,17 +192,27 @@ fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
                     .weight(1f)
                     .fillMaxHeight()
                     .padding(2.dp)
-                    .background(if (entry != null) cellColor else Color.Transparent, RoundedCornerShape(8.dp))
-                    .border(if (entry != null) 0.5.dp else 0.dp, Color.Black, RoundedCornerShape(8.dp)),
+                    .background(
+                        if (entry != null) cellBgColor else Color.White.copy(alpha = 0.3f),
+                        RoundedCornerShape(4.dp)
+                    )
+                    .border(
+                        if (entry != null) 0.5.dp else 0.1.dp,
+                        if (entry != null) Color.Black else Color.Gray,
+                        RoundedCornerShape(4.dp)
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 if (entry != null) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (entry.iconRes != null) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(2.dp)
+                    ) {
+                        entry.iconRes?.let {
                             Image(
-                                painter = painterResource(id = entry.iconRes),
+                                painter = painterResource(id = it),
                                 contentDescription = null,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                         Text(
@@ -193,7 +220,8 @@ fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
                             fontSize = 7.sp,
                             fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.Center,
-                            lineHeight = 8.sp
+                            lineHeight = 8.sp,
+                            color = Color.Black
                         )
                     }
                 }

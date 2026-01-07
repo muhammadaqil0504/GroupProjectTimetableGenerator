@@ -1,22 +1,7 @@
 package com.example.timetableapp.EditTimetable
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.timetableapp.ScallopedHeader
-import com.example.timetableapp.TimetableEntry // Import the shared data class
-import com.example.timetableapp.generatetable.*
+import com.example.timetableapp.TimetableEntry
 
 @Composable
 fun EditTimetableScreen(
@@ -24,100 +9,71 @@ fun EditTimetableScreen(
     onUpdateClick: (TimetableEntry) -> Unit,
     onCancelClick: () -> Unit
 ) {
-    val chalkboardGreen = Color(0xFF4B6E63)
-    val inputBgColor = Color(0xFFF5E6D3)
-    val buttonGold = Color(0xFFB58B43)
-    val buttonRed = Color(0xFFFF3B30)
+    // Local state to hold edits before saving
+    var editedEntry by remember { mutableStateOf(entryToEdit) }
 
-
-    var editedSubject by remember { mutableStateOf(entryToEdit.subject) }
-    var editedLecturer by remember { mutableStateOf(entryToEdit.lecturer) }
-    var editedDuration by remember { mutableStateOf(entryToEdit.duration) }
-    var editedDayAndTime by remember { mutableStateOf(entryToEdit.dayAndTime) }
-
+    // Navigation state: 0=Main Form, 1=Subject, 2=Icon, 3=Duration, 4=Day/Time
     var currentStep by remember { mutableIntStateOf(0) }
 
     when (currentStep) {
-        1 -> SubjectListScreen(onSubjectSelected = { editedSubject = it; currentStep = 0 }, onBack = { currentStep = 0 })
-        3 -> DurationSelectionScreen(onDurationSelected = { editedDuration = it; currentStep = 0 }, onBack = { currentStep = 0 })
-        4 -> DayTimeSelectionScreen(onSelectionComplete = { editedDayAndTime = it; currentStep = 0 }, onBack = { currentStep = 0 })
+        // STEP 1: SUBJECT SELECTION
+        1 -> SubjectEditScreen(
+            onSubjectSelected = { selectedSubject ->
+                editedEntry = editedEntry.copy(subject = selectedSubject)
+                currentStep = 2 // Move to Icon selection automatically
+            },
+            onBack = { currentStep = 0 }
+        )
 
-        else -> {
-            Box(modifier = Modifier.fillMaxSize().background(chalkboardGreen)) {
-                ScallopedHeader()
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp),
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    Spacer(Modifier.height(50.dp))
+        // STEP 2: ICON SELECTION
+        2 -> IconPickerScreen(
+            subjectName = editedEntry.subject,
+            currentIconRes = editedEntry.iconRes,
+            onIconSelected = { selectedIcon ->
+                editedEntry = editedEntry.copy(iconRes = selectedIcon)
+                currentStep = 0 // Return to main form
+            },
+            onBack = { currentStep = 1 }
+        )
 
-                    IconButton(onClick = onCancelClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
-                    }
+        // STEP 3: DURATION SELECTION (FIXED TO SYNC WITH WEEKLY VIEW)
+        3 -> EditDurationScreen(
+            // We pass the current day so the Duration screen can rebuild the dayAndTime string
+            currentDay = editedEntry.dayAndTime.split(" ").firstOrNull() ?: "SUN",
+            onDurationSelected = { selectedDuration, newDayAndTime ->
+                // CRITICAL: We update BOTH fields so Weekly View finds the correct slot
+                editedEntry = editedEntry.copy(
+                    duration = selectedDuration,
+                    dayAndTime = newDayAndTime
+                )
+                currentStep = 0
+            },
+            onBack = { currentStep = 0 }
+        )
 
-                    Text(
-                        text = "Edit Timetable",
-                        color = Color.White,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 30.dp)
-                    )
+        // STEP 4: DAY SELECTION (FIXED TO PRESERVE TIME)
+        4 -> EditDaySelectionScreen(
+            // Pass the time part only (e.g., "08.00")
+            currentTime = editedEntry.dayAndTime.split(" ").lastOrNull()?.replace(":", ".") ?: "08.00",
+            onSelectionComplete = { selectedDayTime ->
+                editedEntry = editedEntry.copy(dayAndTime = selectedDayTime)
+                currentStep = 0
+            },
+            onBack = { currentStep = 0 }
+        )
 
-                    // Form Fields
-                    InputField("Subject", editedSubject, true, inputBgColor) { currentStep = 1 }
-
-                    LecturerInputField(
-                        label = "Lecturer",
-                        value = editedLecturer,
-                        onValueChange = { editedLecturer = it },
-                        bgColor = inputBgColor
-                    )
-
-                    InputField("Duration", editedDuration, true, inputBgColor) { currentStep = 3 }
-
-                    InputField("Days & Time", editedDayAndTime, true, inputBgColor) { currentStep = 4 }
-
-                    Spacer(Modifier.height(60.dp))
-
-                    // Action Buttons (Gold & Red)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(15.dp)
-                    ) {
-                        // SAVE BUTTON
-                        Button(
-                            onClick = {
-
-                                onUpdateClick(entryToEdit.copy(
-                                    subject = editedSubject,
-                                    lecturer = editedLecturer,
-                                    duration = editedDuration,
-                                    dayAndTime = editedDayAndTime
-                                ))
-                            },
-                            modifier = Modifier.weight(1f).height(50.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = buttonGold),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("SAVE", fontWeight = FontWeight.Bold)
-                        }
-
-                        // CANCEL BUTTON
-                        Button(
-                            onClick = onCancelClick,
-                            modifier = Modifier.weight(1f).height(50.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = buttonRed),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("CANCEL", fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
+        // STEP 0: THE MAIN EDIT FORM
+        else -> EditFormContent(
+            entry = editedEntry,
+            onSubjectFieldClick = { currentStep = 1 },
+            onIconFieldClick = { currentStep = 2 },
+            onDurationFieldClick = { currentStep = 3 },
+            onDayTimeFieldClick = { currentStep = 4 },
+            onLecturerChange = { newLecturer ->
+                editedEntry = editedEntry.copy(lecturer = newLecturer)
+            },
+            onSave = { onUpdateClick(editedEntry) },
+            onCancel = onCancelClick
+        )
     }
 }

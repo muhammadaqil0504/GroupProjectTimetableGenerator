@@ -18,14 +18,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// 1. CORRECTED IMPORTS: Ensure these match your actual folder names exactly
+// Ensure these imports match your actual folder names.
+// Note: If you renamed 'EditTimetable' to 'edittimetable' to fix the warning, update here.
 import com.example.timetableapp.EditTimetable.EditTimetableScreen
 import com.example.timetableapp.homepage.HomepageInterface
 import com.example.timetableapp.SubjectView.SubjectInterface
 import com.example.timetableapp.generatetable.GenerateTimetableInterface
 import com.example.timetableapp.TimetableView.TimetableViewScreen
 
-// 2. SHARED DATA CLASS: Defined here once for the whole project
+// SHARED DATA CLASS
 data class TimetableEntry(
     val subject: String,
     val lecturer: String,
@@ -38,14 +39,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // State for screen navigation
             var currentScreen by remember { mutableStateOf("front") }
 
-            // The main list that holds all your subjects
+            // Using mutableStateListOf ensures the UI observes additions/replacements
             val userSchedule = remember { mutableStateListOf<TimetableEntry>() }
 
-            // State for the item you want to edit
+            // State to hold the specific item being edited
             var entryToEdit by remember { mutableStateOf<TimetableEntry?>(null) }
+
+            // Critical for ensuring the correct index is replaced in the list
+            var editIndex by remember { mutableIntStateOf(-1) }
 
             val chalkboardGreen = Color(0xFF4B6E63)
 
@@ -59,13 +62,17 @@ class MainActivity : ComponentActivity() {
                         HomepageInterface(
                             onGenerateNavClick = { currentScreen = "generate" },
                             onEditNavClick = {
-                                // Selects first entry or a placeholder if list is empty
-                                entryToEdit = if (userSchedule.isNotEmpty()) {
-                                    userSchedule[0]
+                                if (userSchedule.isNotEmpty()) {
+                                    // Set tracking to the first item for editing
+                                    editIndex = 0
+                                    entryToEdit = userSchedule[editIndex]
+                                    currentScreen = "edit"
                                 } else {
-                                    TimetableEntry("New Subject", "Lecturer Name", "1.0", "MON 08:00")
+                                    // Provide a placeholder if the list is empty
+                                    editIndex = -1
+                                    entryToEdit = TimetableEntry("New Subject", "Lecturer", "30m", "MON 08.00")
+                                    currentScreen = "edit"
                                 }
-                                currentScreen = "edit"
                             },
                             onSubjectNavClick = { currentScreen = "subject" },
                             onTimetableClick = { currentScreen = "view_timetable" }
@@ -81,17 +88,33 @@ class MainActivity : ComponentActivity() {
                     }
 
                     "edit" -> {
-                        entryToEdit?.let { entry ->
+                        // Using a local val to ensure thread safety during composition
+                        val currentEntry = entryToEdit
+                        if (currentEntry != null) {
                             EditTimetableScreen(
-                                entryToEdit = entry,
-                                onUpdateClick = { updated ->
-                                    val index = userSchedule.indexOf(entry)
-                                    if (index != -1) userSchedule[index] = updated
-                                    currentScreen = "home"
+                                entryToEdit = currentEntry,
+                                onUpdateClick = { updatedEntry: TimetableEntry ->
+                                    // UPDATE LOGIC: Replace at specific index to ensure persistence
+                                    if (editIndex != -1 && editIndex < userSchedule.size) {
+                                        userSchedule[editIndex] = updatedEntry
+                                    } else {
+                                        userSchedule.add(updatedEntry)
+                                    }
+
+                                    // Reset editing state and navigate to view the results
+                                    entryToEdit = null
+                                    editIndex = -1
+                                    currentScreen = "view_timetable"
                                 },
-                                onCancelClick = { currentScreen = "home" }
+                                onCancelClick = {
+                                    entryToEdit = null
+                                    editIndex = -1
+                                    currentScreen = "home"
+                                }
                             )
-                        } ?: run { currentScreen = "home" }
+                        } else {
+                            currentScreen = "home"
+                        }
                     }
 
                     "subject" -> {
@@ -99,8 +122,8 @@ class MainActivity : ComponentActivity() {
                     }
 
                     "view_timetable" -> {
-                        // FIXED: Links to TimetableViewScreen with proper list conversion
                         TimetableViewScreen(
+                            // .toList() forces a UI refresh by providing a new list instance
                             scheduleData = userSchedule.toList(),
                             onBackClick = { currentScreen = "home" }
                         )
@@ -111,7 +134,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// 3. GLOBAL COMPOSABLES: Accessible by all other files in your project
+// --- GLOBAL UI COMPONENTS ---
 
 @Composable
 fun TimetableInterface(onGenerateClick: () -> Unit) {

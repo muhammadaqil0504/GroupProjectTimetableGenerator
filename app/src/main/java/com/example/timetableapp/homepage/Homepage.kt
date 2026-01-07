@@ -44,7 +44,7 @@ fun HomepageInterface(
             Spacer(Modifier.height(130.dp))
 
             Text(
-                text = "HI USER",
+                text = "HI STUDENT !",
                 color = Color.White,
                 fontSize = 42.sp,
                 fontWeight = FontWeight.Black
@@ -60,7 +60,7 @@ fun HomepageInterface(
 
             // 1. Uses built-in DateRange icon
             MenuButton(
-                text = "Generate TimeTable",
+                text = "Generate Timetable",
                 icon = Icons.Default.DateRange,
                 bgColor = cardColor,
                 onClick = onGenerateNavClick
@@ -68,7 +68,7 @@ fun HomepageInterface(
 
             // 2. Uses built-in Edit icon
             MenuButton(
-                text = "Edit TimeTable",
+                text = "Edit Timetable",
                 icon = Icons.Default.Edit,
                 bgColor = cardColor,
                 onClick = onEditNavClick

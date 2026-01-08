@@ -1,6 +1,5 @@
 package com.example.timetableapp.EditTimetable
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.timetableapp.ScallopedHeader
+
 
 @Composable
 fun EditDurationScreen(
@@ -24,10 +23,9 @@ fun EditDurationScreen(
     onDurationSelected: (String, String) -> Unit, // Returns (newDuration, newDayAndTime)
     onBack: () -> Unit
 ) {
-    val chalkboardGreen = Color(0xFF4B6E63)
+    // Background color variable removed to let background.jpeg show
     val itemBgColor = Color(0xFFF5E6D3)
 
-    // These slots match the hardcoded ranges in your WeeklyTableLayout
     val timeSlots = listOf(
         "7.30-8.00",
         "8.00-8.30",
@@ -40,8 +38,9 @@ fun EditDurationScreen(
         "12.00-12.30"
     )
 
-    Box(modifier = Modifier.fillMaxSize().background(chalkboardGreen)) {
-        ScallopedHeader()
+    // CHANGED: Removed .background(chalkboardGreen)
+    Box(modifier = Modifier.fillMaxSize()) {
+
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -76,13 +75,8 @@ fun EditDurationScreen(
                             .fillMaxWidth()
                             .height(60.dp)
                             .clickable {
-                                // 1. Extract the start time (e.g., "10.30") from "10.30-11.00"
                                 val startTime = timeRange.split("-")[0].trim()
-
-                                // 2. Create the combined string for the Weekly View logic
                                 val newDayAndTime = "$currentDay $startTime"
-
-                                // 3. Pass both values back to EditTimetableScreen
                                 onDurationSelected(timeRange, newDayAndTime)
                             },
                         shape = RoundedCornerShape(8.dp),

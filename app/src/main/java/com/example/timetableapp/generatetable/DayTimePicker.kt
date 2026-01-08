@@ -16,19 +16,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.timetableapp.ScallopedHeader
 import androidx.compose.foundation.BorderStroke
 
 @Composable
 fun DayTimeSelectionScreen(onSelectionComplete: (String) -> Unit, onBack: () -> Unit) {
-    val chalkboardGreen = Color(0xFF4B6E63)
+    // Removed chalkboardGreen variable as it's no longer used for the background
     val itemBgColor = Color(0xFFF5E6D3)
     val buttonGold = Color(0xFFB58B43)
 
-    // List of days for selection
     val daysOfWeek = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday")
 
-    // Map to convert full names to the abbreviations used in TimetableView grid
     val dayMap = mapOf(
         "Sunday" to "SUN",
         "Monday" to "MON",
@@ -39,8 +36,10 @@ fun DayTimeSelectionScreen(onSelectionComplete: (String) -> Unit, onBack: () -> 
 
     var selectedDay by remember { mutableStateOf("") }
 
-    Box(modifier = Modifier.fillMaxSize().background(chalkboardGreen)) {
-        ScallopedHeader()
+    // CHANGED: Removed .background(chalkboardGreen)
+    // The Box is now transparent, showing the background image from MainActivity
+    Box(modifier = Modifier.fillMaxSize()) {
+
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -86,7 +85,6 @@ fun DayTimeSelectionScreen(onSelectionComplete: (String) -> Unit, onBack: () -> 
 
             Button(
                 onClick = {
-                    // Convert "Monday" to "MON" before sending it back
                     val shortDay = dayMap[selectedDay] ?: selectedDay
                     onSelectionComplete(shortDay)
                 },

@@ -5,7 +5,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -16,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -68,7 +66,7 @@ class MainActivity : ComponentActivity() {
             // 1. Root Box to hold the Background Image globally
             Box(modifier = Modifier.fillMaxSize()) {
 
-                // 2. Global Background Image (Visible on all screens)
+                // 2. Global Background Image
                 Image(
                     painter = painterResource(id = R.drawable.background),
                     contentDescription = null,
@@ -79,10 +77,10 @@ class MainActivity : ComponentActivity() {
                 // 3. Global Dark Mode Overlay
                 Box(modifier = Modifier.fillMaxSize().background(overlayColor))
 
-                // 4. Content Surface (Must be Transparent to see the image)
+                // 4. Content Surface
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color.Transparent // This lets the image show through
+                    color = Color.Transparent
                 ) {
                     when (currentScreen) {
                         "front" -> {
@@ -180,8 +178,7 @@ fun TimetableInterface(onGenerateClick: () -> Unit) {
     val buttonGold = Color(0xFFB58B43)
 
     Box(modifier = Modifier.fillMaxSize()) {
-        ScallopedHeader()
-
+        // ScallopedHeader() removed from here
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
@@ -201,23 +198,6 @@ fun TimetableInterface(onGenerateClick: () -> Unit) {
             ) {
                 Text("GENERATE", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
-        }
-    }
-}
-
-@Composable
-fun ScallopedHeader() {
-    Canvas(modifier = Modifier.fillMaxWidth().height(70.dp)) {
-        val headerColor = Color.White.copy(alpha = 0.85f)
-        drawRect(headerColor, size = size.copy(height = size.height * 0.4f))
-        val circleCount = 10
-        val radius = size.width / circleCount
-        for (i in 0..circleCount) {
-            drawCircle(
-                color = headerColor,
-                radius = radius / 1.1f,
-                center = Offset(x = (size.width / circleCount) * i, y = size.height * 0.4f)
-            )
         }
     }
 }

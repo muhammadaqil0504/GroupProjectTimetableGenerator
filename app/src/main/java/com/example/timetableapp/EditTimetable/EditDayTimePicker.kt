@@ -14,7 +14,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.timetableapp.ScallopedHeader
 
 @Composable
 fun EditDaySelectionScreen(
@@ -22,7 +21,7 @@ fun EditDaySelectionScreen(
     onSelectionComplete: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    val chalkboardGreen = Color(0xFF4B6E63)
+    // Removed chalkboardGreen variable as it's no longer used for the background
     val itemBgColor = Color(0xFFF5E6D3)
     val buttonGold = Color(0xFFB58B43)
 
@@ -35,11 +34,11 @@ fun EditDaySelectionScreen(
         "Thursday" to "THU"
     )
 
-    // We only keep state for the day selection now
     var selectedDay by remember { mutableStateOf("") }
 
-    Box(modifier = Modifier.fillMaxSize().background(chalkboardGreen)) {
-        ScallopedHeader()
+    // CHANGED: Removed .background(chalkboardGreen)
+    // The Box is now transparent to show the background from MainActivity
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -98,8 +97,6 @@ fun EditDaySelectionScreen(
             Button(
                 onClick = {
                     val shortDay = dayMap[selectedDay] ?: "MON"
-                    // We combine the NEW day with the OLD time
-                    // This ensures the Daily and Weekly views don't lose the slot connection
                     onSelectionComplete("$shortDay $currentTime")
                 },
                 modifier = Modifier

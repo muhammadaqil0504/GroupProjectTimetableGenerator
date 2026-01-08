@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun DailyListLayout(scheduleData: List<TimetableEntry>) {
+    // These are the shortened names (3 letters)
     val days = listOf("SUN", "MON", "TUE", "WED", "THU")
     var selectedDay by remember { mutableStateOf("SUN") }
 
@@ -37,37 +38,79 @@ fun DailyListLayout(scheduleData: List<TimetableEntry>) {
         }
 
     Column(modifier = Modifier.fillMaxSize().padding(10.dp)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 15.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // DAY SELECTION ROW
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 15.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             days.forEach { day ->
+                val isSelected = selectedDay == day
                 Button(
                     onClick = { selectedDay = day },
-                    modifier = Modifier.weight(1f).height(40.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = if (selectedDay == day) Color(0xFFF5E6D3) else Color.White.copy(alpha = 0.8f)),
+                    modifier = Modifier.weight(1f).height(45.dp), // Slightly taller for better visibility
+                    contentPadding = PaddingValues(0.dp), // Removes internal padding to fit "WED" etc.
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSelected) Color(0xFFF5E6D3) else Color.White.copy(alpha = 0.8f)
+                    ),
                     shape = RoundedCornerShape(8.dp),
                     border = BorderStroke(1.dp, Color.Black)
-                ) { Text(day, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+                ) {
+                    Text(
+                        text = day,
+                        color = Color.Black,
+                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
+                        fontSize = 13.sp // Slightly larger font
+                    )
+                }
             }
         }
 
-        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             items(filteredSchedule) { entry ->
                 Row(modifier = Modifier.fillMaxWidth()) {
                     val displayTime = entry.duration.split("-")[0].replace(".", ":")
-                    Column(modifier = Modifier.width(75.dp)) {
-                        Text("$displayTime AM", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 15.dp))
-                        HorizontalDivider(modifier = Modifier.padding(top = 4.dp).width(50.dp), color = Color.White.copy(alpha = 0.6f))
+                    Column(modifier = Modifier.width(80.dp)) { // Slightly wider for the time label
+                        Text(
+                            text = "$displayTime AM",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 15.dp)
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(top = 4.dp).width(55.dp),
+                            color = Color.White.copy(alpha = 0.6f)
+                        )
                     }
                     Card(
                         modifier = Modifier.fillMaxWidth().height(85.dp),
-                        colors = CardDefaults.cardColors(containerColor = if (entry.subject == "REHAT") Color(0xFFFFF9C4) else Color(0xFFE0E0E0)),
-                        shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Color.Black)
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (entry.subject == "REHAT") Color(0xFFFFF9C4) else Color(0xFFE0E0E0)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color.Black)
                     ) {
-                        Row(modifier = Modifier.fillMaxSize().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.fillMaxSize().padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             entry.iconRes?.let { Image(painterResource(it), null, modifier = Modifier.size(55.dp)) }
                             Spacer(Modifier.width(15.dp))
                             Column {
-                                Text(entry.subject, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = Color.Black)
-                                Text(entry.lecturer, fontSize = 13.sp, color = Color.DarkGray)
+                                Text(
+                                    text = entry.subject,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 18.sp,
+                                    color = Color.Black
+                                )
+                                Text(
+                                    text = entry.lecturer,
+                                    fontSize = 13.sp,
+                                    color = Color.DarkGray
+                                )
                             }
                         }
                     }

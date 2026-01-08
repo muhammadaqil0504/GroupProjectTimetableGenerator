@@ -1,6 +1,5 @@
 package com.example.timetableapp.generatetable
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,7 +14,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.timetableapp.ScallopedHeader
 
 @Composable
 fun SubjectListScreen(onSubjectSelected: (String) -> Unit, onBack: () -> Unit) {
@@ -25,18 +23,24 @@ fun SubjectListScreen(onSubjectSelected: (String) -> Unit, onBack: () -> Unit) {
         "Pendidikan Islam", "Sejarah", "PJPK", "Muzik", "Seni Visual"
     )
 
-    val chalkboardGreen = Color(0xFF4B6E63)
+    // button color
     val itemBgColor = Color(0xFFF5E6D3)
 
-    Box(modifier = Modifier.fillMaxSize().background(chalkboardGreen)) {
-        ScallopedHeader()
+    // CHANGED: Removed .background(chalkboardGreen)
+    // The Box is now transparent, showing the background image from MainActivity
+    Box(modifier = Modifier.fillMaxSize()) {
+
 
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp)) {
             Spacer(Modifier.height(50.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
                 }
                 Spacer(Modifier.width(8.dp))
                 Text(
@@ -52,7 +56,7 @@ fun SubjectListScreen(onSubjectSelected: (String) -> Unit, onBack: () -> Unit) {
             // Scrollable List of Subjects
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 20.dp) // Adds space at the bottom of the list
+                contentPadding = PaddingValues(bottom = 20.dp)
             ) {
                 items(subjects) { subject ->
                     Button(
@@ -67,7 +71,7 @@ fun SubjectListScreen(onSubjectSelected: (String) -> Unit, onBack: () -> Unit) {
                     ) {
                         Text(
                             text = subject,
-                            color = Color(0xFF4B6E63), // Text matches chalkboard color for better design
+                            color = Color(0xFF4B6E63),
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 18.sp
                         )

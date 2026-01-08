@@ -2,7 +2,6 @@ package com.example.timetableapp.generatetable
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -22,17 +21,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.timetableapp.R
-import com.example.timetableapp.ScallopedHeader
 
 @Composable
 fun IconPickerScreen(subjectName: String, onIconSelected: (Int) -> Unit, onBack: () -> Unit) {
-    val chalkboardGreen = Color(0xFF4B6E63)
     val iconBoxColor = Color(0xFFF5E6D3)
     val highlightColor = Color(0xFFB58B43)
 
     var tempSelectedIcon by remember { mutableStateOf<Int?>(null) }
 
-    // Use a Map instead of 'when' for cleaner icon management
     val subjectIconsMap = mapOf(
         "Matematik" to listOf(R.drawable.math_icon, R.drawable.math_icon2, R.drawable.math_icon3, R.drawable.math_icon4, R.drawable.math_icon5),
         "Sains" to listOf(R.drawable.sains_icon, R.drawable.sains_icon2, R.drawable.sains_icon3, R.drawable.sains_icon4, R.drawable.sains_icon5),
@@ -45,27 +41,25 @@ fun IconPickerScreen(subjectName: String, onIconSelected: (Int) -> Unit, onBack:
         "Muzik" to listOf(R.drawable.muzik_icon, R.drawable.muzik_icon2, R.drawable.muzik_icon3, R.drawable.muzik_icon4, R.drawable.muzik_icon5)
     )
 
-    // Fallback icons if the subject is not found in the map
     val defaultIcons = listOf(
-        R.drawable.math_icon,
-        R.drawable.sains_icon,
-        R.drawable.bm_icon,
-        R.drawable.bi_icon,
-        R.drawable.sejarah_icon
+        R.drawable.math_icon, R.drawable.sains_icon, R.drawable.bm_icon, R.drawable.bi_icon, R.drawable.sejarah_icon
     )
 
-    // Retrieve icons from the map or use the default
     val iconsToShow = subjectIconsMap[subjectName] ?: defaultIcons
 
-    Box(modifier = Modifier.fillMaxSize().background(chalkboardGreen)) {
-        ScallopedHeader()
+    Box(modifier = Modifier.fillMaxSize()) {
+
 
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 25.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Top Margin matching other pages
             Spacer(Modifier.height(50.dp))
 
+            // Back Header Row matching other pages
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -78,7 +72,7 @@ fun IconPickerScreen(subjectName: String, onIconSelected: (Int) -> Unit, onBack:
                     )
                 }
                 Text(
-                    "Icon Selection",
+                    text = "Icon Selection",
                     color = Color.White,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
@@ -89,7 +83,7 @@ fun IconPickerScreen(subjectName: String, onIconSelected: (Int) -> Unit, onBack:
                 text = "Pick one of 5 icons for $subjectName",
                 color = Color.White.copy(alpha = 0.8f),
                 fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = 20.dp)
+                modifier = Modifier.padding(bottom = 20.dp).align(Alignment.Start).padding(start = 12.dp)
             )
 
             LazyVerticalGrid(
@@ -125,11 +119,11 @@ fun IconPickerScreen(subjectName: String, onIconSelected: (Int) -> Unit, onBack:
                 onClick = { tempSelectedIcon?.let { onIconSelected(it) } },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 20.dp)
-                    .height(55.dp),
+                    .padding(vertical = 30.dp) // Updated padding to match Day Selection page
+                    .height(60.dp),
                 enabled = tempSelectedIcon != null,
                 colors = ButtonDefaults.buttonColors(containerColor = highlightColor),
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(12.dp) // Updated to 12.dp to match other screens
             ) {
                 Text(
                     "SAVE ICON",

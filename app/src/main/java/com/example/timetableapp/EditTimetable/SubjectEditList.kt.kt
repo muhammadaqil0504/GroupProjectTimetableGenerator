@@ -1,6 +1,5 @@
 package com.example.timetableapp.EditTimetable
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,14 +14,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.timetableapp.ScallopedHeader
 
 @Composable
 fun SubjectEditScreen(
     onSubjectSelected: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    // List matching the "SUBJECT EDIT" reference
+    // List matching your reference
     val subjects = listOf(
         "Bahasa Melayu",
         "Bahasa Inggeris",
@@ -35,11 +33,12 @@ fun SubjectEditScreen(
         "Seni Visual"
     )
 
-    val chalkboardGreen = Color(0xFF4B6E63)
-    val itemBgColor = Color(0xFFF5E6D3) // Cream color from reference
+    // itemBgColor is kept for the subject buttons
+    val itemBgColor = Color(0xFFF5E6D3)
 
-    Box(modifier = Modifier.fillMaxSize().background(chalkboardGreen)) {
-        ScallopedHeader()
+    // CHANGED: Removed .background(chalkboardGreen)
+    Box(modifier = Modifier.fillMaxSize()) {
+
 
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 30.dp),
@@ -78,7 +77,7 @@ fun SubjectEditScreen(
                             .fillMaxWidth()
                             .height(55.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = itemBgColor),
-                        shape = RoundedCornerShape(8.dp), // Sharper corners like reference
+                        shape = RoundedCornerShape(8.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                     ) {
                         Text(

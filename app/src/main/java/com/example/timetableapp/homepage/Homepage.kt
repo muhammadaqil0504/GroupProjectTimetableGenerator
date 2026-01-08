@@ -16,7 +16,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.timetableapp.R
-import com.example.timetableapp.ScallopedHeader
 
 @Composable
 fun HomepageInterface(
@@ -40,7 +39,7 @@ fun HomepageInterface(
     Box(modifier = Modifier.fillMaxSize()) {
 
         // 1. Header (Decorative white edge)
-        ScallopedHeader()
+
 
         // 2. Mode Toggle Switch - Large touch area and large icon
         IconButton(

@@ -16,14 +16,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.timetableapp.ScallopedHeader
 
 @Composable
 fun DurationSelectionScreen(onDurationSelected: (String) -> Unit, onBack: () -> Unit) {
-    val chalkboardGreen = Color(0xFF4B6E63)
+    // We removed chalkboardGreen to let the background show
     val itemBgColor = Color(0xFFF5E6D3)
 
-    // These slots are updated to match the format used in your WeeklyTableLayout
     val timeSlots = listOf(
         "7.30-8.00",
         "8.00-8.30",
@@ -36,8 +34,9 @@ fun DurationSelectionScreen(onDurationSelected: (String) -> Unit, onBack: () -> 
         "12.00-12.30"
     )
 
-    Box(modifier = Modifier.fillMaxSize().background(chalkboardGreen)) {
-        ScallopedHeader()
+    // CHANGED: Removed .background(chalkboardGreen)
+    Box(modifier = Modifier.fillMaxSize()) {
+
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp),
             horizontalAlignment = Alignment.CenterHorizontally

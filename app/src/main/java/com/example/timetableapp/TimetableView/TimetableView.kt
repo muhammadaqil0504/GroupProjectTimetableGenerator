@@ -3,7 +3,6 @@ package com.example.timetableapp.TimetableView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,14 +13,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.timetableapp.DailyListLayout
+import com.example.timetableapp.PdfExporter
 import com.example.timetableapp.R
-import com.example.timetableapp.ScallopedHeader
 import com.example.timetableapp.TimetableEntry
 
 @Composable
@@ -30,26 +30,60 @@ fun TimetableViewScreen(
     onBackClick: () -> Unit
 ) {
     var isWeeklyView by remember { mutableStateOf(true) }
-    val chalkboardGreen = Color(0xFF4B6E63)
     val switchButtonColor = Color(0xFFB58B43)
+    val exportButtonColor = Color(0xFF4A90E2) // Distinct blue for export
+    val context = LocalContext.current
 
-    Box(modifier = Modifier.fillMaxSize().background(chalkboardGreen)) {
-        ScallopedHeader()
-
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 100.dp, start = 10.dp, end = 10.dp),
+                .padding(horizontal = 25.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = if (isWeeklyView) "WEEKLY VIEW" else "DAILY VIEW",
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 10.dp)
-            )
+            Spacer(Modifier.height(50.dp))
 
+            // Navigation and Header Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
+                }
+
+                Text(
+                    text = if (isWeeklyView) "Weekly" else "Daily",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // SIMPLE EXPORT BUTTON
+                Button(
+                    onClick = { PdfExporter.exportTimetableToPdf(context, scheduleData) },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f)),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    modifier = Modifier.height(35.dp)
+                ) {
+                    Text(
+                        text = "EXPORT PDF",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // Table Content Area
             Box(modifier = Modifier.weight(1f)) {
                 if (isWeeklyView) {
                     WeeklyTableLayout(scheduleData)
@@ -58,29 +92,23 @@ fun TimetableViewScreen(
                 }
             }
 
+            // Switch View Button (Main Action)
             Button(
                 onClick = { isWeeklyView = !isWeeklyView },
                 modifier = Modifier
                     .padding(vertical = 20.dp)
-                    .fillMaxWidth(0.8f)
+                    .fillMaxWidth()
                     .height(55.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = switchButtonColor),
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Text(
-                    text = if (isWeeklyView) "Switch to Daily" else "Switch to Weekly",
+                    text = if (isWeeklyView) "SWITCH TO DAILY" else "SWITCH TO WEEKLY",
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
-        }
-
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier.padding(top = 40.dp, start = 10.dp)
-        ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
         }
     }
 }
@@ -162,23 +190,20 @@ fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
                 TimetableEntry("Perhimpunan", "Tapak", time, "MON $time", R.drawable.perhimpunan_icon)
             } else {
                 scheduleData.find { item ->
-                    // 1. Check if Day matches
                     val dayMatch = item.dayAndTime.uppercase().contains(day)
 
-                    // 2. Normalization Function to match generated data with grid slots
                     fun normalize(t: String): String {
                         return t.uppercase()
                             .replace(" AM", "")
                             .replace(" PM", "")
                             .replace(":", ".")
-                            .split("-")[0] // Extract start time
+                            .split("-")[0]
                             .trim()
                     }
 
                     val savedTime = normalize(item.dayAndTime.split(" ").lastOrNull() ?: "")
                     val slotStart = normalize(time)
 
-                    // 3. Match if Day matches AND normalized times match (accounting for leading zeros)
                     dayMatch && (
                             savedTime == slotStart ||
                                     "0$savedTime" == slotStart ||

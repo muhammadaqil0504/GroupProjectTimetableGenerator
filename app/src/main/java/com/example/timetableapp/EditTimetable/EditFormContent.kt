@@ -17,7 +17,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.timetableapp.ScallopedHeader
 import com.example.timetableapp.TimetableEntry
 
 @Composable
@@ -31,12 +30,13 @@ fun EditFormContent(
     onSave: () -> Unit,
     onCancel: () -> Unit
 ) {
-    val chalkboardGreen = Color(0xFF4B6E63)
+    // Removed chalkboardGreen to let the background image show through
     val inputBgColor = Color(0xFFF5E6D3)
     val generatedLabelColor = Color.White.copy(alpha = 0.7f)
 
-    Box(modifier = Modifier.fillMaxSize().background(chalkboardGreen)) {
-        ScallopedHeader()
+    // CHANGED: Removed .background(chalkboardGreen)
+    Box(modifier = Modifier.fillMaxSize()) {
+
 
         LazyColumn(
             modifier = Modifier
@@ -103,7 +103,6 @@ fun EditFormContent(
 
             // Day Section
             item {
-                // Displaying the 'Generated' data as reference
                 val dayOnly = entry.dayAndTime.split(" ").firstOrNull() ?: ""
                 Text("Day Generated: $dayOnly", color = generatedLabelColor, fontSize = 13.sp)
 
@@ -113,7 +112,6 @@ fun EditFormContent(
 
             // Duration Section
             item {
-                // Displaying the 'Generated' data as reference
                 Text("Duration Generated: ${entry.duration}", color = generatedLabelColor, fontSize = 13.sp)
 
                 ReadOnlyField("Duration Edit", entry.duration, inputBgColor, onDurationFieldClick)

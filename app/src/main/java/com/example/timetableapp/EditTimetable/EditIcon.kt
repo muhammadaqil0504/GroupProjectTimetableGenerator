@@ -22,16 +22,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.timetableapp.R
-import com.example.timetableapp.ScallopedHeader
 
 @Composable
 fun IconPickerScreen(
     subjectName: String,
-    currentIconRes: Int?, // Added to show the "Current Icon" preview
+    currentIconRes: Int?, // Shows the "Current Icon" preview
     onIconSelected: (Int) -> Unit,
     onBack: () -> Unit
 ) {
-    val chalkboardGreen = Color(0xFF4B6E63)
+    // Removed chalkboardGreen variable for the background
     val iconBoxColor = Color(0xFFF5E6D3)
     val saveButtonGold = Color(0xFFB58B43)
 
@@ -51,8 +50,9 @@ fun IconPickerScreen(
 
     val iconsToShow = subjectIconsMap[subjectName] ?: listOf(R.drawable.math_icon, R.drawable.sains_icon, R.drawable.bm_icon)
 
-    Box(modifier = Modifier.fillMaxSize().background(chalkboardGreen)) {
-        ScallopedHeader()
+    // CHANGED: Removed .background(chalkboardGreen)
+    Box(modifier = Modifier.fillMaxSize()) {
+
 
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp),
@@ -65,12 +65,25 @@ fun IconPickerScreen(
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
                 }
-                Text("Icon", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).wrapContentWidth(Alignment.CenterHorizontally))
-                Spacer(Modifier.width(48.dp)) // To balance the back button
+                Text(
+                    text = "Icon",
+                    color = Color.White,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f).wrapContentWidth(Alignment.CenterHorizontally)
+                )
+                Spacer(Modifier.width(48.dp)) // Balanced the back button
             }
 
             Text("Subject", color = Color.White, fontSize = 14.sp)
-            Text(subjectName, color = Color.Black, modifier = Modifier.background(iconBoxColor, RoundedCornerShape(4.dp)).padding(horizontal = 12.dp, vertical = 4.dp).fillMaxWidth())
+            Text(
+                text = subjectName,
+                color = Color.Black,
+                modifier = Modifier
+                    .background(iconBoxColor, RoundedCornerShape(4.dp))
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .fillMaxWidth()
+            )
 
             Spacer(Modifier.height(20.dp))
 

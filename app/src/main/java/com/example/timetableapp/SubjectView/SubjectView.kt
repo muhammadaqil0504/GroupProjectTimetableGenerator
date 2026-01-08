@@ -15,12 +15,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.timetableapp.ScallopedHeader
 
 @Composable
 fun SubjectInterface(onBackClick: () -> Unit) {
-    val chalkboardGreen = Color(0xFF4B6E63)
-    val cardColor = Color(0xFFF5E6D3) // Cream color from your screenshots
+    // Kept the card color for the subject items
+    val cardColor = Color(0xFFF5E6D3)
 
     val subjectList = listOf(
         "Bahasa Melayu", "Bahasa Inggeris", "Matematik",
@@ -28,8 +27,10 @@ fun SubjectInterface(onBackClick: () -> Unit) {
         "PJPK", "Muzik", "Seni Visual"
     )
 
-    Box(modifier = Modifier.fillMaxSize().background(chalkboardGreen)) {
-        ScallopedHeader()
+    // CHANGED: Removed .background(chalkboardGreen)
+    // This allows the background from MainActivity to be visible
+    Box(modifier = Modifier.fillMaxSize()) {
+
 
         Column(
             modifier = Modifier
@@ -61,7 +62,7 @@ fun SubjectInterface(onBackClick: () -> Unit) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState()) // Makes the list scrollable
+                    .verticalScroll(rememberScrollState())
                     .padding(bottom = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {

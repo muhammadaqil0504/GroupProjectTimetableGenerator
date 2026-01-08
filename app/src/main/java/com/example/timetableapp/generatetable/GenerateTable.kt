@@ -20,7 +20,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.timetableapp.ScallopedHeader
 import com.example.timetableapp.TimetableEntry
 
 @Composable
@@ -29,11 +28,10 @@ fun GenerateTimetableInterface(
     onAddEntry: (TimetableEntry) -> Unit,
     onGenerateAutomatically: () -> Unit
 ) {
-    val chalkboardGreen = Color(0xFF4B6E63)
+    // We keep your colors exactly the same
     val inputBgColor = Color(0xFFF5E6D3)
     val buttonGold = Color(0xFFB58B43)
 
-    // State management
     var selectedSubject by remember { mutableStateOf("Select Subject") }
     var selectedIconRes by remember { mutableStateOf<Int?>(null) }
     var lecturerName by remember { mutableStateOf("") }
@@ -41,12 +39,11 @@ fun GenerateTimetableInterface(
     var selectedDayOnly by remember { mutableStateOf("Select Day") }
     var currentStep by remember { mutableIntStateOf(0) }
 
-    // Screen navigation logic
     when (currentStep) {
         1 -> SubjectListScreen(
             onSubjectSelected = {
                 selectedSubject = it
-                currentStep = 2 // Move to Icon Picker immediately after subject
+                currentStep = 2
             },
             onBack = { currentStep = 0 }
         )
@@ -67,8 +64,10 @@ fun GenerateTimetableInterface(
             onBack = { currentStep = 0 }
         )
         else -> {
-            Box(modifier = Modifier.fillMaxSize().background(chalkboardGreen)) {
-                ScallopedHeader()
+            // CHANGED: Removed .background(chalkboardGreen)
+            // This Box is now transparent, showing the background from MainActivity
+            Box(modifier = Modifier.fillMaxSize()) {
+
 
                 Column(
                     modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp),
@@ -81,10 +80,8 @@ fun GenerateTimetableInterface(
 
                     Text(text = "Generate Timetable", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 20.dp))
 
-                    // Subject Dropdown
                     InputField("Subject", selectedSubject, true, inputBgColor) { currentStep = 1 }
 
-                    // Icon Preview
                     if (selectedIconRes != null) {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
                             Text("Selected Icon: ", color = Color.White, fontSize = 14.sp)
@@ -94,7 +91,6 @@ fun GenerateTimetableInterface(
                         }
                     }
 
-                    // Lecturer Text Input
                     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
                         Text(text = "Lecturer", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                         TextField(
@@ -113,15 +109,11 @@ fun GenerateTimetableInterface(
                         )
                     }
 
-                    // Duration Dropdown
                     InputField("Duration", selectedDuration, true, inputBgColor) { currentStep = 3 }
-
-                    // Day Dropdown
                     InputField("Day", selectedDayOnly, true, inputBgColor) { currentStep = 4 }
 
                     Spacer(Modifier.height(30.dp))
 
-                    // --- ADD BUTTON LOGIC UPDATED TO INCLUDE ICON ---
                     GenerateActionButton("ADD", Icons.Default.AddCircle, buttonGold) {
                         if (selectedSubject != "Select Subject" &&
                             selectedDayOnly != "Select Day" &&
@@ -135,11 +127,10 @@ fun GenerateTimetableInterface(
                                     lecturer = lecturerName,
                                     duration = selectedDuration,
                                     dayAndTime = combinedDayTime,
-                                    iconRes = selectedIconRes // THE MISSING LINK!
+                                    iconRes = selectedIconRes
                                 )
                             )
 
-                            // Reset local form
                             selectedSubject = "Select Subject"
                             selectedIconRes = null
                             lecturerName = ""

@@ -2,8 +2,9 @@ package com.example.timetableapp.EditTimetable
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -16,33 +17,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-
 @Composable
 fun EditDurationScreen(
-    currentDay: String, // Pass the current day (e.g., "MON") to rebuild the full string
-    onDurationSelected: (String, String) -> Unit, // Returns (newDuration, newDayAndTime)
+    currentDay: String,
+    onDurationSelected: (String, String) -> Unit,
     onBack: () -> Unit
 ) {
-    // Background color variable removed to let background.jpeg show
     val itemBgColor = Color(0xFFF5E6D3)
 
     val timeSlots = listOf(
-        "7.30-8.00",
-        "8.00-8.30",
-        "8.30-9.00",
-        "9.00-9.30",
-        "9.30-10.00",
-        "10.30-11.00",
-        "11.00-11.30",
-        "11.30-12.00",
-        "12.00-12.30"
+        "7.30-8.00", "8.00-8.30",
+        "8.30-9.00", "9.00-9.30",
+        "9.30-10.00", "10.30-11.00",
+        "11.00-11.30", "11.30-12.00",
+        "12.00-12.30", "12.30-1.00",
+        "1.00-1.30", "1.30-2.00"
     )
 
-    // CHANGED: Removed .background(chalkboardGreen)
     Box(modifier = Modifier.fillMaxSize()) {
-
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 25.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(50.dp))
@@ -57,36 +53,39 @@ fun EditDurationScreen(
                 Text(
                     text = "Select Duration",
                     color = Color.White,
-                    fontSize = 24.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
 
             Spacer(Modifier.height(20.dp))
 
-            LazyColumn(
+            // CHANGED: Use LazyVerticalGrid for a smaller, more compact form
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(bottom = 20.dp)
             ) {
                 items(timeSlots) { timeRange ->
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(60.dp)
+                            .height(50.dp) // Smaller height to fit more slots
                             .clickable {
                                 val startTime = timeRange.split("-")[0].trim()
                                 val newDayAndTime = "$currentDay $startTime"
                                 onDurationSelected(timeRange, newDayAndTime)
                             },
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(10.dp),
                         color = itemBgColor,
                         shadowElevation = 2.dp
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 text = timeRange,
-                                fontSize = 18.sp,
+                                fontSize = 15.sp, // Reduced font size for grid layout
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Black
                             )

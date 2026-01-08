@@ -27,40 +27,35 @@ fun HomepageInterface(
     onTimetableClick: () -> Unit,
     onResetConfirm: () -> Unit
 ) {
-    // Dynamic styling for Dark Mode - Background colors for buttons
-    // We use slightly lower alpha (0.85f) so the global background peeks through the buttons
+    // Colors based on Mode
     val cardColor = if (isDarkMode) Color(0xFF2B2B2B).copy(alpha = 0.85f) else Color(0xFFF5E6D3).copy(alpha = 0.85f)
     val buttonTextColor = if (isDarkMode) Color.White else Color.Black
     val solidRed = Color(0xFFD32F2F)
 
     var showResetDialog by remember { mutableStateOf(false) }
 
-    // Use a Box to layer the ScallopedHeader and Toggle on top of the Column
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // 1. Header (Decorative white edge)
-
-
-        // 2. Mode Toggle Switch - Large touch area and large icon
+        // --- 1. EXTRA LARGE FLOATING DARK MODE ICON (NO SHAPE) ---
         IconButton(
             onClick = onDarkModeToggle,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
                 .padding(top = 10.dp, end = 10.dp)
-                .size(64.dp)
+                .size(100.dp) // The clickable area is now 100dp
         ) {
             Icon(
                 painter = painterResource(
                     id = if (isDarkMode) R.drawable.light else R.drawable.dark
                 ),
                 contentDescription = "Toggle Dark Mode",
-                tint = if (isDarkMode) Color.Yellow else Color.White,
-                modifier = Modifier.size(42.dp)
+                tint = if (isDarkMode) Color(0xFFFFD700) else Color.White,
+                modifier = Modifier.size(70.dp) // The icon itself is now 70dp
             )
         }
 
-        // 3. Main Content Column
+        // --- 2. MAIN CONTENT COLUMN ---
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -69,9 +64,10 @@ fun HomepageInterface(
                 .padding(horizontal = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(40.dp))
+            // Increased spacer to account for the much larger icon
+            Spacer(Modifier.height(100.dp))
 
-            // Text Greeting
+            // Greeting Texts
             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
                 Text(
                     text = "HI STUDENT !",
@@ -89,15 +85,15 @@ fun HomepageInterface(
 
             Spacer(Modifier.height(35.dp))
 
-            // Menu Buttons - Colors update based on isDarkMode
+            // Menu Buttons
             MenuButton("Generate Timetable", Icons.Default.DateRange, cardColor, buttonTextColor, onGenerateNavClick)
             MenuButton("Edit Timetable", Icons.Default.Edit, cardColor, buttonTextColor, onEditNavClick)
             MenuButton("Subject", Icons.Default.Star, cardColor, buttonTextColor, onSubjectNavClick)
-            MenuButton("TIMETABLE", Icons.Outlined.Notifications, cardColor, buttonTextColor, onTimetableClick)
+            MenuButton("Timetable", Icons.Outlined.Notifications, cardColor, buttonTextColor, onTimetableClick)
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // THE SOLID RED RESET BUTTON
+            // RESET BUTTON
             Button(
                 onClick = { showResetDialog = true },
                 modifier = Modifier
@@ -117,7 +113,7 @@ fun HomepageInterface(
             }
         }
 
-        // Reset Logic Dialog
+        // Reset Confirmation Dialog
         if (showResetDialog) {
             AlertDialog(
                 onDismissRequest = { showResetDialog = false },
@@ -164,7 +160,7 @@ fun MenuButton(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, null, tint = textColor, modifier = Modifier.size(24.dp))
+            Icon(icon, null, tint = textColor, modifier = Modifier.size(28.dp))
             Spacer(Modifier.width(20.dp))
             Text(
                 text = text,

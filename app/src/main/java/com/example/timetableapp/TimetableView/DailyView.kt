@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun DailyListLayout(scheduleData: List<TimetableEntry>) {
-    // These are the shortened names (3 letters)
     val days = listOf("SUN", "MON", "TUE", "WED", "THU")
     var selectedDay by remember { mutableStateOf("SUN") }
 
@@ -30,15 +29,16 @@ fun DailyListLayout(scheduleData: List<TimetableEntry>) {
         fixedItems.add(TimetableEntry("Perhimpunan", "Tapak", "07.30-08.00", "MON 07.30", R.drawable.perhimpunan_icon))
     }
 
-    // NORMALIZED SORTING
     val filteredSchedule = (scheduleData.filter { it.dayAndTime.uppercase().contains(selectedDay) } + fixedItems)
         .sortedBy { entry ->
             val timePart = entry.duration.split("-").firstOrNull() ?: ""
-            if (timePart.length == 4 && !timePart.startsWith("0")) "0$timePart" else timePart
+            val hour = timePart.split(".", ":")[0].toIntOrNull() ?: 0
+            val normalizedHour = if (hour < 7) hour + 12 else hour
+            val minute = timePart.split(".", ":").getOrNull(1)?.toIntOrNull() ?: 0
+            normalizedHour * 100 + minute
         }
 
     Column(modifier = Modifier.fillMaxSize().padding(10.dp)) {
-        // DAY SELECTION ROW
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 15.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -47,20 +47,15 @@ fun DailyListLayout(scheduleData: List<TimetableEntry>) {
                 val isSelected = selectedDay == day
                 Button(
                     onClick = { selectedDay = day },
-                    modifier = Modifier.weight(1f).height(45.dp), // Slightly taller for better visibility
-                    contentPadding = PaddingValues(0.dp), // Removes internal padding to fit "WED" etc.
+                    modifier = Modifier.weight(1f).height(45.dp),
+                    contentPadding = PaddingValues(0.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isSelected) Color(0xFFF5E6D3) else Color.White.copy(alpha = 0.8f)
                     ),
                     shape = RoundedCornerShape(8.dp),
                     border = BorderStroke(1.dp, Color.Black)
                 ) {
-                    Text(
-                        text = day,
-                        color = Color.Black,
-                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
-                        fontSize = 13.sp // Slightly larger font
-                    )
+                    Text(text = day, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
             }
         }
@@ -71,20 +66,27 @@ fun DailyListLayout(scheduleData: List<TimetableEntry>) {
         ) {
             items(filteredSchedule) { entry ->
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    val displayTime = entry.duration.split("-")[0].replace(".", ":")
-                    Column(modifier = Modifier.width(80.dp)) { // Slightly wider for the time label
+
+                    // --- AM/PM LOGIC FOR FULL DURATION ---
+                    // We look at the start time to decide AM/PM
+                    val startTime = entry.duration.split("-")[0]
+                    val hourPart = startTime.split(".", ":")[0].toIntOrNull() ?: 0
+                    val period = if (hourPart in 12..23 || hourPart in 1..6) "PM" else "AM"
+
+                    Column(modifier = Modifier.width(105.dp)) { // Width increased for "7.30-8.00 AM"
                         Text(
-                            text = "$displayTime AM",
+                            text = "${entry.duration} $period",
                             color = Color.White,
-                            fontSize = 13.sp,
+                            fontSize = 12.sp, // Slightly smaller to ensure it stays on one line
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(top = 15.dp)
                         )
                         HorizontalDivider(
-                            modifier = Modifier.padding(top = 4.dp).width(55.dp),
+                            modifier = Modifier.padding(top = 4.dp).width(80.dp),
                             color = Color.White.copy(alpha = 0.6f)
                         )
                     }
+
                     Card(
                         modifier = Modifier.fillMaxWidth().height(85.dp),
                         colors = CardDefaults.cardColors(
@@ -97,20 +99,11 @@ fun DailyListLayout(scheduleData: List<TimetableEntry>) {
                             modifier = Modifier.fillMaxSize().padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            entry.iconRes?.let { Image(painterResource(it), null, modifier = Modifier.size(55.dp)) }
+                            entry.iconRes?.let { Image(painterResource(it), null, modifier = Modifier.size(50.dp)) }
                             Spacer(Modifier.width(15.dp))
                             Column {
-                                Text(
-                                    text = entry.subject,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 18.sp,
-                                    color = Color.Black
-                                )
-                                Text(
-                                    text = entry.lecturer,
-                                    fontSize = 13.sp,
-                                    color = Color.DarkGray
-                                )
+                                Text(text = entry.subject, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = Color.Black)
+                                Text(text = entry.lecturer, fontSize = 13.sp, color = Color.DarkGray)
                             }
                         }
                     }

@@ -24,6 +24,21 @@ import com.example.timetableapp.PdfExporter
 import com.example.timetableapp.R
 import com.example.timetableapp.TimetableEntry
 
+// --- ADDED: Helper function for Shortforms ---
+fun getSubjectAlias(subject: String): String {
+    return when (subject.trim()) {
+        "Bahasa Melayu" -> "BM"
+        "Bahasa Inggeris" -> "BI"
+        "Matematik" -> "MAT"
+        "Sains" -> "SNS"
+        "Pendidikan Islam" -> "PI"
+        "Muzik" -> "MZ"
+        "Sejarah" -> "SEJ"
+        "Seni Visual" -> "PSV"
+        else -> if (subject.length > 5) subject.take(4) + ".." else subject
+    }
+}
+
 @Composable
 fun TimetableViewScreen(
     scheduleData: List<TimetableEntry>,
@@ -31,7 +46,6 @@ fun TimetableViewScreen(
 ) {
     var isWeeklyView by remember { mutableStateOf(true) }
     val switchButtonColor = Color(0xFFB58B43)
-    val exportButtonColor = Color(0xFF4A90E2) // Distinct blue for export
     val context = LocalContext.current
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -43,7 +57,6 @@ fun TimetableViewScreen(
         ) {
             Spacer(Modifier.height(50.dp))
 
-            // Navigation and Header Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -64,7 +77,6 @@ fun TimetableViewScreen(
                     modifier = Modifier.weight(1f)
                 )
 
-                // SIMPLE EXPORT BUTTON
                 Button(
                     onClick = { PdfExporter.exportTimetableToPdf(context, scheduleData) },
                     shape = RoundedCornerShape(8.dp),
@@ -83,7 +95,6 @@ fun TimetableViewScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // Table Content Area
             Box(modifier = Modifier.weight(1f)) {
                 if (isWeeklyView) {
                     WeeklyTableLayout(scheduleData)
@@ -92,7 +103,6 @@ fun TimetableViewScreen(
                 }
             }
 
-            // Switch View Button (Main Action)
             Button(
                 onClick = { isWeeklyView = !isWeeklyView },
                 modifier = Modifier
@@ -117,7 +127,10 @@ fun TimetableViewScreen(
 fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
     val days = listOf("", "SUN", "MON", "TUE", "WED", "THU")
     val morningSlots = listOf("7.30-8.00", "8.00-8.30", "8.30-9.00", "9.00-9.30", "9.30-10.00")
-    val afternoonSlots = listOf("10.30-11.00", "11.00-11.30", "11.30-12.00", "12.00-12.30")
+    val afternoonSlots = listOf(
+        "10.30-11.00", "11.00-11.30", "11.30-12.00",
+        "12.00-12.30", "12.30-1.00", "1.00-1.30", "1.30-2.00"
+    )
 
     Column(
         modifier = Modifier
@@ -171,7 +184,7 @@ fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
     val cellBgColor = Color(0xFFFDF5E6)
 
     Row(
-        modifier = Modifier.fillMaxWidth().height(65.dp),
+        modifier = Modifier.fillMaxWidth().height(60.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -187,7 +200,7 @@ fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
             val isPerhimpunan = day == "MON" && time == "7.30-8.00"
 
             val entry = if (isPerhimpunan) {
-                TimetableEntry("Perhimpunan", "Tapak", time, "MON $time", R.drawable.perhimpunan_icon)
+                TimetableEntry("PER", "Tapak", time, "MON $time", R.drawable.perhimpunan_icon)
             } else {
                 scheduleData.find { item ->
                     val dayMatch = item.dayAndTime.uppercase().contains(day)
@@ -240,12 +253,14 @@ fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
                                 modifier = Modifier.size(22.dp)
                             )
                         }
+                        // --- UPDATED: Using getSubjectAlias here ---
                         Text(
-                            text = entry.subject,
-                            fontSize = 7.sp,
+                            text = getSubjectAlias(entry.subject),
+                            fontSize = 9.sp, // Slightly bigger font since names are shorter
                             fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.Center,
-                            lineHeight = 8.sp,
+                            lineHeight = 10.sp,
+                            maxLines = 1, // Keep on one line
                             color = Color.Black
                         )
                     }

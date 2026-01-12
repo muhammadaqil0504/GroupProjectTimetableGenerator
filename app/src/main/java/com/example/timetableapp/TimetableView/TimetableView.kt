@@ -1,5 +1,6 @@
 package com.example.timetableapp.TimetableView
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -53,7 +54,7 @@ fun TimetableViewScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 15.dp), // Reduced padding to give table more room
+                .padding(horizontal = 15.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(50.dp))
@@ -78,8 +79,16 @@ fun TimetableViewScreen(
                     modifier = Modifier.weight(1f)
                 )
 
+                // FIXED: Export button now captures the result and shows a Toast
                 Button(
-                    onClick = { PdfExporter.exportTimetableToPdf(context, scheduleData) },
+                    onClick = {
+                        val file = PdfExporter.exportTimetableToPdf(context, scheduleData)
+                        if (file != null) {
+                            Toast.makeText(context, "PDF Exported to Downloads folder", Toast.LENGTH_LONG).show()
+                        } else {
+                            Toast.makeText(context, "Export failed. Please check permissions.", Toast.LENGTH_SHORT).show()
+                        }
+                    },
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f)),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
@@ -126,7 +135,6 @@ fun TimetableViewScreen(
 
 @Composable
 fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
-    // UPDATED: Starting with Monday and including all 7 days
     val days = listOf("", "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
 
     val morningSlots = listOf("7.30-8.00", "8.00-8.30", "8.30-9.00", "9.00-9.30", "9.30-10.00")
@@ -139,7 +147,7 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White.copy(alpha = 0.95f), RoundedCornerShape(8.dp))
-            .padding(4.dp) // Reduced padding
+            .padding(4.dp)
             .border(1.dp, Color.Black, RoundedCornerShape(8.dp))
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
@@ -149,7 +157,7 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 10.sp, // Smaller font to fit 8 columns
+                    fontSize = 10.sp,
                     color = Color.Black
                 )
             }
@@ -165,7 +173,7 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp, horizontal = 2.dp)
-                        .height(25.dp) // Slightly shorter height
+                        .height(25.dp)
                         .background(Color(0xFFD1D1D1), RoundedCornerShape(4.dp))
                         .border(0.5.dp, Color.Black, RoundedCornerShape(4.dp)),
                     contentAlignment = Alignment.Center
@@ -183,18 +191,17 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
 
 @Composable
 fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
-    // UPDATED: Full 7 day match
     val dayHeaders = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
     val cellBgColor = Color(0xFFFDF5E6)
 
     Row(
-        modifier = Modifier.fillMaxWidth().height(55.dp), // Slightly shorter rows
+        modifier = Modifier.fillMaxWidth().height(55.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = time,
             modifier = Modifier.weight(1f),
-            fontSize = 7.sp, // Smaller font for time labels
+            fontSize = 7.sp,
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Bold,
             lineHeight = 8.sp,
@@ -224,7 +231,7 @@ fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .padding(1.dp) // Minimal padding
+                    .padding(1.dp)
                     .background(
                         if (entry != null) cellBgColor else Color.White.copy(alpha = 0.3f),
                         RoundedCornerShape(2.dp)
@@ -250,13 +257,13 @@ fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
                             Image(
                                 painter = painterResource(id = iconToDraw),
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp) // Smaller icons
+                                modifier = Modifier.size(18.dp)
                             )
                         }
 
                         Text(
                             text = getSubjectAlias(entry.subject),
-                            fontSize = 8.sp, // Smaller text
+                            fontSize = 8.sp,
                             fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.Center,
                             lineHeight = 9.sp,

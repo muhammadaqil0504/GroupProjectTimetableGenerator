@@ -24,7 +24,7 @@ import com.example.timetableapp.PdfExporter
 import com.example.timetableapp.R
 import com.example.timetableapp.TimetableEntry
 
-// --- ADDED: Helper function for Shortforms ---
+// Helper function for Shortforms
 fun getSubjectAlias(subject: String): String {
     return when (subject.trim()) {
         "Bahasa Melayu" -> "BM"
@@ -35,6 +35,7 @@ fun getSubjectAlias(subject: String): String {
         "Muzik" -> "MZ"
         "Sejarah" -> "SEJ"
         "Seni Visual" -> "PSV"
+        "Perhimpunan" -> "PER"
         else -> if (subject.length > 5) subject.take(4) + ".." else subject
     }
 }
@@ -52,7 +53,7 @@ fun TimetableViewScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 25.dp),
+                .padding(horizontal = 15.dp), // Reduced padding to give table more room
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(50.dp))
@@ -125,7 +126,9 @@ fun TimetableViewScreen(
 
 @Composable
 fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
-    val days = listOf("", "SUN", "MON", "TUE", "WED", "THU")
+    // UPDATED: Starting with Monday and including all 7 days
+    val days = listOf("", "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
+
     val morningSlots = listOf("7.30-8.00", "8.00-8.30", "8.30-9.00", "9.00-9.30", "9.30-10.00")
     val afternoonSlots = listOf(
         "10.30-11.00", "11.00-11.30", "11.30-12.00",
@@ -136,7 +139,7 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White.copy(alpha = 0.95f), RoundedCornerShape(8.dp))
-            .padding(6.dp)
+            .padding(4.dp) // Reduced padding
             .border(1.dp, Color.Black, RoundedCornerShape(8.dp))
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
@@ -146,7 +149,7 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 12.sp,
+                    fontSize = 10.sp, // Smaller font to fit 8 columns
                     color = Color.Black
                 )
             }
@@ -162,12 +165,12 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp, horizontal = 2.dp)
-                        .height(30.dp)
+                        .height(25.dp) // Slightly shorter height
                         .background(Color(0xFFD1D1D1), RoundedCornerShape(4.dp))
                         .border(0.5.dp, Color.Black, RoundedCornerShape(4.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("REHAT", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.DarkGray)
+                    Text("REHAT", fontWeight = FontWeight.Bold, fontSize = 10.sp, color = Color.DarkGray)
                 }
             }
 
@@ -180,87 +183,84 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
 
 @Composable
 fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
-    val dayHeaders = listOf("SUN", "MON", "TUE", "WED", "THU")
+    // UPDATED: Full 7 day match
+    val dayHeaders = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
     val cellBgColor = Color(0xFFFDF5E6)
 
     Row(
-        modifier = Modifier.fillMaxWidth().height(60.dp),
+        modifier = Modifier.fillMaxWidth().height(55.dp), // Slightly shorter rows
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = time,
             modifier = Modifier.weight(1f),
-            fontSize = 9.sp,
+            fontSize = 7.sp, // Smaller font for time labels
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Bold,
+            lineHeight = 8.sp,
             color = Color.Black
         )
 
         dayHeaders.forEach { day ->
-            val isPerhimpunan = day == "MON" && time == "7.30-8.00"
+            val entry = scheduleData.find { item ->
+                val dayMatch = item.dayAndTime.uppercase().contains(day)
 
-            val entry = if (isPerhimpunan) {
-                TimetableEntry("PER", "Tapak", time, "MON $time", R.drawable.perhimpunan_icon)
-            } else {
-                scheduleData.find { item ->
-                    val dayMatch = item.dayAndTime.uppercase().contains(day)
-
-                    fun normalize(t: String): String {
-                        return t.uppercase()
-                            .replace(" AM", "")
-                            .replace(" PM", "")
-                            .replace(":", ".")
-                            .split("-")[0]
-                            .trim()
-                    }
-
-                    val savedTime = normalize(item.dayAndTime.split(" ").lastOrNull() ?: "")
-                    val slotStart = normalize(time)
-
-                    dayMatch && (
-                            savedTime == slotStart ||
-                                    "0$savedTime" == slotStart ||
-                                    savedTime == "0$slotStart"
-                            )
+                fun normalize(t: String): String {
+                    return t.uppercase()
+                        .replace(" AM", "")
+                        .replace(" PM", "")
+                        .replace(":", ".")
+                        .split("-")[0]
+                        .trim()
                 }
+
+                val savedTime = normalize(item.dayAndTime.split(" ").lastOrNull() ?: "")
+                val slotStart = normalize(time)
+
+                dayMatch && (savedTime == slotStart || "0$savedTime" == slotStart || savedTime == "0$slotStart")
             }
 
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .padding(2.dp)
+                    .padding(1.dp) // Minimal padding
                     .background(
                         if (entry != null) cellBgColor else Color.White.copy(alpha = 0.3f),
-                        RoundedCornerShape(4.dp)
+                        RoundedCornerShape(2.dp)
                     )
                     .border(
                         if (entry != null) 0.5.dp else 0.1.dp,
                         if (entry != null) Color.Black else Color.Gray,
-                        RoundedCornerShape(4.dp)
+                        RoundedCornerShape(2.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 if (entry != null) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(2.dp)
+                        modifier = Modifier.padding(1.dp)
                     ) {
-                        entry.iconRes?.let {
+                        val iconToDraw = when {
+                            entry.subject.equals("Perhimpunan", ignoreCase = true) -> R.drawable.perhimpunan_icon
+                            else -> entry.iconRes
+                        }
+
+                        if (iconToDraw != null) {
                             Image(
-                                painter = painterResource(id = it),
+                                painter = painterResource(id = iconToDraw),
                                 contentDescription = null,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(18.dp) // Smaller icons
                             )
                         }
-                        // --- UPDATED: Using getSubjectAlias here ---
+
                         Text(
                             text = getSubjectAlias(entry.subject),
-                            fontSize = 9.sp, // Slightly bigger font since names are shorter
+                            fontSize = 8.sp, // Smaller text
                             fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.Center,
-                            lineHeight = 10.sp,
-                            maxLines = 1, // Keep on one line
+                            lineHeight = 9.sp,
+                            maxLines = 1,
                             color = Color.Black
                         )
                     }

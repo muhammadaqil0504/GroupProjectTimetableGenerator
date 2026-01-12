@@ -17,20 +17,26 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun SubjectListScreen(onSubjectSelected: (String) -> Unit, onBack: () -> Unit) {
-    // List matching the Malaysian primary/secondary school curriculum
+    // UPDATED: Added "Perhimpunan" to the list so users can pick it manually
     val subjects = listOf(
-        "Bahasa Melayu", "Bahasa Inggeris", "Matematik", "Sains",
-        "Pendidikan Islam", "Sejarah", "PJPK", "Muzik", "Seni Visual"
+        "Perhimpunan", // New option
+        "Bahasa Melayu",
+        "Bahasa Inggeris",
+        "Matematik",
+        "Sains",
+        "Pendidikan Islam",
+        "Sejarah",
+        "PJPK",
+        "Muzik",
+        "Seni Visual"
     )
 
     // button color
     val itemBgColor = Color(0xFFF5E6D3)
+    // text color - adjusted for better contrast
+    val itemTextColor = Color(0xFF3E5A51)
 
-    // CHANGED: Removed .background(chalkboardGreen)
-    // The Box is now transparent, showing the background image from MainActivity
     Box(modifier = Modifier.fillMaxSize()) {
-
-
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp)) {
             Spacer(Modifier.height(50.dp))
 
@@ -56,14 +62,14 @@ fun SubjectListScreen(onSubjectSelected: (String) -> Unit, onBack: () -> Unit) {
             // Scrollable List of Subjects
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 20.dp)
+                contentPadding = PaddingValues(bottom = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp) // Better spacing between buttons
             ) {
                 items(subjects) { subject ->
                     Button(
                         onClick = { onSubjectSelected(subject) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 6.dp)
                             .height(60.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = itemBgColor),
                         shape = RoundedCornerShape(12.dp),
@@ -71,7 +77,7 @@ fun SubjectListScreen(onSubjectSelected: (String) -> Unit, onBack: () -> Unit) {
                     ) {
                         Text(
                             text = subject,
-                            color = Color(0xFF4B6E63),
+                            color = itemTextColor,
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 18.sp
                         )

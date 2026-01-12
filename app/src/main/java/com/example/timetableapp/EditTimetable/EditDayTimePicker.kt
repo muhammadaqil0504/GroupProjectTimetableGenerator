@@ -17,59 +17,99 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun EditDaySelectionScreen(
-    currentTime: String, // This is the preserved time (e.g., "08.00")
+    currentTime: String, // e.g., "08.00"
     onSelectionComplete: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    // Removed chalkboardGreen variable as it's no longer used for the background
     val itemBgColor = Color(0xFFF5E6D3)
     val buttonGold = Color(0xFFB58B43)
 
-    val daysOfWeek = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday")
+    // UPDATED: Full 7 days starting with Monday
+    val daysOfWeek = listOf(
+        "Monday", "Tuesday", "Wednesday", "Thursday",
+        "Friday", "Saturday", "Sunday"
+    )
+
+    // UPDATED: Full mapping for 7 days
     val dayMap = mapOf(
-        "Sunday" to "SUN",
         "Monday" to "MON",
         "Tuesday" to "TUE",
         "Wednesday" to "WED",
-        "Thursday" to "THU"
+        "Thursday" to "THU",
+        "Friday" to "FRI",
+        "Saturday" to "SAT",
+        "Sunday" to "SUN"
     )
 
     var selectedDay by remember { mutableStateOf("") }
 
-    // CHANGED: Removed .background(chalkboardGreen)
-    // The Box is now transparent to show the background from MainActivity
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 25.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(50.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
                 }
-                Text(text = "Edit Day Only", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Edit Day Only",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Spacer(Modifier.height(20.dp))
 
-            // Information Card showing the time being preserved
+            // Information Card
             Card(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f))
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.15f)),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Preserving Time:", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
-                    Text(currentTime, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "Current Class Time:",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        text = currentTime,
+                        color = Color.White,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
                 }
             }
 
-            // --- DAY SELECTION ---
-            Text("Select New Day", color = Color.White, modifier = Modifier.padding(vertical = 12.dp))
+            Text(
+                text = "Select New Day",
+                color = Color.White,
+                fontSize = 16.sp,
+                modifier = Modifier.padding(vertical = 12.dp).align(Alignment.Start)
+            )
 
-            // Grid-like layout for days
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Scrollable column if screen height is small
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.weight(1f)
+            ) {
                 daysOfWeek.forEach { day ->
                     val isSelected = selectedDay == day
                     Surface(
@@ -77,37 +117,49 @@ fun EditDaySelectionScreen(
                             .fillMaxWidth()
                             .height(50.dp),
                         onClick = { selectedDay = day },
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(10.dp),
                         color = if (isSelected) Color.White else itemBgColor,
-                        border = if (isSelected) BorderStroke(2.dp, buttonGold) else null
+                        border = if (isSelected) BorderStroke(2.dp, buttonGold) else null,
+                        tonalElevation = 2.dp
                     ) {
-                        Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.padding(horizontal = 20.dp)) {
+                        Box(
+                            contentAlignment = Alignment.CenterStart,
+                            modifier = Modifier.padding(horizontal = 20.dp)
+                        ) {
                             Text(
                                 text = day,
                                 color = Color.Black,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                fontSize = 16.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                             )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
-
             Button(
                 onClick = {
                     val shortDay = dayMap[selectedDay] ?: "MON"
+                    // Combines the new short day with the existing time
                     onSelectionComplete("$shortDay $currentTime")
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 30.dp)
-                    .height(55.dp),
+                    .height(60.dp),
                 enabled = selectedDay.isNotEmpty(),
-                colors = ButtonDefaults.buttonColors(containerColor = buttonGold),
-                shape = RoundedCornerShape(8.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonGold,
+                    disabledContainerColor = buttonGold.copy(alpha = 0.5f)
+                ),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text("UPDATE DAY", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "UPDATE DAY",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
             }
         }
     }

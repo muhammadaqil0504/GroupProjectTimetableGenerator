@@ -20,37 +20,55 @@ import androidx.compose.foundation.BorderStroke
 
 @Composable
 fun DayTimeSelectionScreen(onSelectionComplete: (String) -> Unit, onBack: () -> Unit) {
-    // Removed chalkboardGreen variable as it's no longer used for the background
     val itemBgColor = Color(0xFFF5E6D3)
     val buttonGold = Color(0xFFB58B43)
 
-    val daysOfWeek = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday")
+    // UPDATED: Full 7 days starting with Monday
+    val daysOfWeek = listOf(
+        "Monday", "Tuesday", "Wednesday", "Thursday",
+        "Friday", "Saturday", "Sunday"
+    )
 
+    // UPDATED: Mapping for all 7 days to match your Timetable logic
     val dayMap = mapOf(
-        "Sunday" to "SUN",
         "Monday" to "MON",
         "Tuesday" to "TUE",
         "Wednesday" to "WED",
-        "Thursday" to "THU"
+        "Thursday" to "THU",
+        "Friday" to "FRI",
+        "Saturday" to "SAT",
+        "Sunday" to "SUN"
     )
 
     var selectedDay by remember { mutableStateOf("") }
 
-    // CHANGED: Removed .background(chalkboardGreen)
-    // The Box is now transparent, showing the background image from MainActivity
     Box(modifier = Modifier.fillMaxSize()) {
-
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 25.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(50.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
                 }
-                Text("Select Day", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Select Day",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Spacer(Modifier.height(20.dp))
@@ -69,9 +87,13 @@ fun DayTimeSelectionScreen(onSelectionComplete: (String) -> Unit, onBack: () -> 
                             .clickable { selectedDay = day },
                         shape = RoundedCornerShape(12.dp),
                         color = if (isSelected) Color.White else itemBgColor,
-                        border = if (isSelected) BorderStroke(2.dp, buttonGold) else null
+                        border = if (isSelected) BorderStroke(2.dp, buttonGold) else null,
+                        tonalElevation = 2.dp
                     ) {
-                        Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.padding(horizontal = 20.dp)) {
+                        Box(
+                            contentAlignment = Alignment.CenterStart,
+                            modifier = Modifier.padding(horizontal = 20.dp)
+                        ) {
                             Text(
                                 text = day,
                                 color = Color.Black,
@@ -93,10 +115,18 @@ fun DayTimeSelectionScreen(onSelectionComplete: (String) -> Unit, onBack: () -> 
                     .padding(vertical = 30.dp)
                     .height(60.dp),
                 enabled = selectedDay.isNotEmpty(),
-                colors = ButtonDefaults.buttonColors(containerColor = buttonGold),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonGold,
+                    disabledContainerColor = buttonGold.copy(alpha = 0.5f)
+                ),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("CONFIRM DAY", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(
+                    text = "CONFIRM DAY",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
             }
         }
     }

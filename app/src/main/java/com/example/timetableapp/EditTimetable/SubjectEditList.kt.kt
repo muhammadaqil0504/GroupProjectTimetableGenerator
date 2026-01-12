@@ -20,8 +20,9 @@ fun SubjectEditScreen(
     onSubjectSelected: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    // List matching your reference
+    // UPDATED: Added Perhimpunan to the list
     val subjects = listOf(
+        "Perhimpunan",
         "Bahasa Melayu",
         "Bahasa Inggeris",
         "Matematik",
@@ -33,13 +34,9 @@ fun SubjectEditScreen(
         "Seni Visual"
     )
 
-    // itemBgColor is kept for the subject buttons
     val itemBgColor = Color(0xFFF5E6D3)
 
-    // CHANGED: Removed .background(chalkboardGreen)
     Box(modifier = Modifier.fillMaxSize()) {
-
-
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally

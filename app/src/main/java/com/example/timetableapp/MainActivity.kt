@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 import com.example.timetableapp.EditTimetable.EditTimetableScreen
+import com.example.timetableapp.EditTimetable.EditSelectionScreen
 import com.example.timetableapp.homepage.HomepageInterface
 import com.example.timetableapp.SubjectView.SubjectInterface
 import com.example.timetableapp.generatetable.GenerateTimetableInterface
@@ -31,7 +32,7 @@ data class TimetableEntry(
     val subject: String,
     val lecturer: String,
     val duration: String,
-    val dayAndTime: String,
+    val dayAndTime: String, // Format: "MON 08.00"
     val iconRes: Int? = null
 )
 
@@ -49,6 +50,7 @@ class MainActivity : ComponentActivity() {
 
             val overlayColor = if (isDarkMode) Color.Black.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.2f)
 
+            // Using mutableStateListOf so the UI updates automatically when items are added/deleted
             val userSchedule = remember {
                 mutableStateListOf<TimetableEntry>().apply {
                     addAll(storage.loadSchedule())
@@ -57,6 +59,12 @@ class MainActivity : ComponentActivity() {
 
             var entryToEdit by remember { mutableStateOf<TimetableEntry?>(null) }
             var editIndex by remember { mutableIntStateOf(-1) }
+
+            // --- HELPER FUNCTION FOR VALIDATION ---
+            fun isSlotTaken(newDayAndTime: String, currentIndex: Int = -1): Boolean {
+                return userSchedule.filterIndexed { index, _ -> index != currentIndex }
+                    .any { it.dayAndTime.uppercase() == newDayAndTime.uppercase() }
+            }
 
             Box(modifier = Modifier.fillMaxSize()) {
                 Image(
@@ -81,17 +89,7 @@ class MainActivity : ComponentActivity() {
                                 isDarkMode = isDarkMode,
                                 onDarkModeToggle = { isDarkMode = !isDarkMode },
                                 onGenerateNavClick = { currentScreen = "generate" },
-                                onEditNavClick = {
-                                    if (userSchedule.isNotEmpty()) {
-                                        editIndex = 0
-                                        entryToEdit = userSchedule[editIndex]
-                                        currentScreen = "edit"
-                                    } else {
-                                        editIndex = -1
-                                        entryToEdit = TimetableEntry("New Subject", "Lecturer", "30m", "MON 08.00")
-                                        currentScreen = "edit"
-                                    }
-                                },
+                                onEditNavClick = { currentScreen = "edit_selection" },
                                 onSubjectNavClick = { currentScreen = "subject" },
                                 onTimetableClick = { currentScreen = "view_timetable" },
                                 onResetConfirm = {
@@ -106,13 +104,37 @@ class MainActivity : ComponentActivity() {
                             GenerateTimetableInterface(
                                 onBackClick = { currentScreen = "home" },
                                 onAddEntry = { newEntry ->
-                                    userSchedule.add(newEntry)
-                                    storage.saveSchedule(userSchedule.toList())
+                                    if (isSlotTaken(newEntry.dayAndTime)) {
+                                        Toast.makeText(context, "This day and time has been filled!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        userSchedule.add(newEntry)
+                                        storage.saveSchedule(userSchedule.toList())
+                                        Toast.makeText(context, "Subject Added!", Toast.LENGTH_SHORT).show()
+                                    }
                                 },
                                 onGenerateAutomatically = {
                                     storage.saveSchedule(userSchedule.toList())
                                     currentScreen = "view_timetable"
                                 }
+                            )
+                        }
+                        "edit_selection" -> {
+                            EditSelectionScreen(
+                                userSchedule = userSchedule.toList(),
+                                onEntrySelected = { index, entry ->
+                                    editIndex = index
+                                    entryToEdit = entry
+                                    currentScreen = "edit"
+                                },
+                                onDeleteEntry = { index ->
+                                    // Remove entry from the list and update storage
+                                    if (index >= 0 && index < userSchedule.size) {
+                                        userSchedule.removeAt(index)
+                                        storage.saveSchedule(userSchedule.toList())
+                                        Toast.makeText(context, "Entry deleted", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                onBack = { currentScreen = "home" }
                             )
                         }
                         "edit" -> {
@@ -121,20 +143,23 @@ class MainActivity : ComponentActivity() {
                                 EditTimetableScreen(
                                     entryToEdit = currentEntry,
                                     onUpdateClick = { updatedEntry ->
-                                        if (editIndex != -1 && editIndex < userSchedule.size) {
-                                            userSchedule[editIndex] = updatedEntry
+                                        if (isSlotTaken(updatedEntry.dayAndTime, editIndex)) {
+                                            Toast.makeText(context, "This day and time has been filled!", Toast.LENGTH_SHORT).show()
                                         } else {
-                                            userSchedule.add(updatedEntry)
+                                            if (editIndex != -1 && editIndex < userSchedule.size) {
+                                                userSchedule[editIndex] = updatedEntry
+                                            }
+                                            storage.saveSchedule(userSchedule.toList())
+                                            entryToEdit = null
+                                            editIndex = -1
+                                            currentScreen = "view_timetable"
+                                            Toast.makeText(context, "Updated Successfully!", Toast.LENGTH_SHORT).show()
                                         }
-                                        storage.saveSchedule(userSchedule.toList())
-                                        entryToEdit = null
-                                        editIndex = -1
-                                        currentScreen = "view_timetable"
                                     },
                                     onCancelClick = {
                                         entryToEdit = null
                                         editIndex = -1
-                                        currentScreen = "home"
+                                        currentScreen = "edit_selection"
                                     }
                                 )
                             } else {
@@ -160,44 +185,26 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TimetableInterface(onGenerateClick: () -> Unit) {
     val buttonGold = Color(0xFFB58B43)
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            // Centers the group vertically in the screen
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.logo_timetable),
+            contentDescription = "App Logo",
+            modifier = Modifier.size(280.dp),
+            contentScale = ContentScale.Fit
+        )
+        Spacer(Modifier.height(40.dp))
+        Button(
+            onClick = onGenerateClick,
+            modifier = Modifier.fillMaxWidth(0.8f).height(65.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = buttonGold),
+            shape = RoundedCornerShape(15.dp)
         ) {
-            // Logo
-            Image(
-                painter = painterResource(id = R.drawable.logo_timetable),
-                contentDescription = "App Logo",
-                modifier = Modifier.size(280.dp),
-                contentScale = ContentScale.Fit
-            )
-
-            // Tight spacer to put button "right below"
-            Spacer(Modifier.height(40.dp))
-
-            // Generate Button - Matching the wide style in your image
-            Button(
-                onClick = onGenerateClick,
-                modifier = Modifier
-                    .fillMaxWidth(0.8f) // Made slightly wider to match screenshot
-                    .height(65.dp),     // Increased height for that chunky look
-                colors = ButtonDefaults.buttonColors(containerColor = buttonGold),
-                shape = RoundedCornerShape(15.dp) // More rounded corners
-            ) {
-                Text(
-                    text = "GENERATE",
-                    color = Color.White,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            // This pushes the whole group slightly higher than dead center
-            Spacer(Modifier.height(80.dp))
+            Text("GENERATE", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         }
+        Spacer(Modifier.height(80.dp))
     }
 }

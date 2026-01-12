@@ -37,6 +37,7 @@ fun IconPickerScreen(
     var tempSelectedIcon by remember { mutableStateOf<Int?>(null) }
 
     val subjectIconsMap = mapOf(
+        "Perhimpunan" to listOf(R.drawable.perhimpunan_icon),
         "Matematik" to listOf(R.drawable.math_icon, R.drawable.math_icon2, R.drawable.math_icon3, R.drawable.math_icon4, R.drawable.math_icon5),
         "Sains" to listOf(R.drawable.sains_icon, R.drawable.sains_icon2, R.drawable.sains_icon3, R.drawable.sains_icon4, R.drawable.sains_icon5),
         "Sejarah" to listOf(R.drawable.sejarah_icon, R.drawable.sejarah_icon2, R.drawable.sejarah_icon3, R.drawable.sejarah_icon4, R.drawable.sejarah_icon5),

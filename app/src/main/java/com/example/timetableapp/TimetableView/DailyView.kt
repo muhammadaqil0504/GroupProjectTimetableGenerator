@@ -18,12 +18,9 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun DailyListLayout(scheduleData: List<TimetableEntry>) {
-    // UPDATED: Sunday to Thursday Only
     val days = listOf("SUN", "MON", "TUE", "WED", "THU")
     var selectedDay by remember { mutableStateOf("SUN") }
 
-    // --- FILTER & SORT LOGIC ---
-    // Removed the "fixedItems" list so REHAT only shows if added by user
     val filteredSchedule = scheduleData.filter { entry ->
         val dayPart = entry.dayAndTime.split(" ").firstOrNull()?.uppercase() ?: ""
         dayPart.startsWith(selectedDay)
@@ -36,20 +33,16 @@ fun DailyListLayout(scheduleData: List<TimetableEntry>) {
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(10.dp)) {
-        // Day Picker Row - Now fits perfectly with 5 days
+        // --- DAY PICKER ROW ---
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 15.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 15.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             days.forEach { day ->
                 val isSelected = selectedDay == day
                 Button(
                     onClick = { selectedDay = day },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(45.dp),
+                    modifier = Modifier.weight(1f).height(45.dp),
                     contentPadding = PaddingValues(0.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isSelected) Color(0xFFB58B43) else Color.White.copy(alpha = 0.8f)
@@ -73,28 +66,39 @@ fun DailyListLayout(scheduleData: List<TimetableEntry>) {
             }
         }
 
+        // --- TIMETABLE LIST ---
         LazyColumn(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(filteredSchedule) { entry ->
-                Row(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
 
-                    // --- TIME & PERIOD LOGIC ---
-                    val timeParts = entry.duration.split("-")
-                    val startTime = timeParts.getOrNull(0)?.trim() ?: ""
-                    val startHour = startTime.split(".", ":")[0].toIntOrNull() ?: 0
-
+                    // --- TIME SECTION WITH HORIZONTAL DIVIDER ---
+                    val startTime = entry.duration.split("-").firstOrNull()?.trim() ?: ""
+                    val startHour = startTime.split(".", ":").firstOrNull()?.toIntOrNull() ?: 0
                     val period = if (startHour in 7..11) "AM" else "PM"
 
-                    Column(modifier = Modifier.width(90.dp)) {
+                    // Increased width to 135.dp for the 16.sp font and divider
+                    Column(
+                        modifier = Modifier.width(105.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
                         Text(
-                            text = "${entry.duration}\n$period",
+                            text = "${entry.duration} $period",
                             color = Color.White,
-                            fontSize = 12.sp,
+                            fontSize = 14.sp, // Kept at 16.sp as requested
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 10.dp),
-                            lineHeight = 14.sp
+                            maxLines = 1
+                        )
+                        // The Horizontal Divider
+                        HorizontalDivider(
+                            modifier = Modifier.padding(top = 4.dp, end = 10.dp).width( width = 80.dp),
+                            thickness = 2.dp,
+                            color = Color.White.copy(alpha = 0.6f)
                         )
                     }
 
@@ -103,19 +107,16 @@ fun DailyListLayout(scheduleData: List<TimetableEntry>) {
 
                     Card(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .weight(1f)
                             .height(80.dp),
                         colors = CardDefaults.cardColors(
-                            // SPECIAL COLOR LOGIC: Grey for Rehat/Perhimpunan, Beige for Subjects
                             containerColor = if (isSpecial) Color(0xFFD1D1D1) else Color(0xFFFDF5E6)
                         ),
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.dp, Color.Black)
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 12.dp),
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             val iconToUse = when {
@@ -128,7 +129,7 @@ fun DailyListLayout(scheduleData: List<TimetableEntry>) {
                                 Image(
                                     painter = painterResource(iconToUse),
                                     contentDescription = null,
-                                    modifier = Modifier.size(45.dp)
+                                    modifier = Modifier.size(40.dp)
                                 )
                             }
 
@@ -138,14 +139,16 @@ fun DailyListLayout(scheduleData: List<TimetableEntry>) {
                                 Text(
                                     text = entry.subject,
                                     fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 17.sp,
-                                    color = Color.Black
+                                    fontSize = 16.sp,
+                                    color = Color.Black,
+                                    maxLines = 1
                                 )
                                 if (entry.lecturer != "-") {
                                     Text(
                                         text = entry.lecturer,
-                                        fontSize = 13.sp,
-                                        color = Color.DarkGray
+                                        fontSize = 12.sp,
+                                        color = Color.DarkGray,
+                                        maxLines = 1
                                     )
                                 }
                             }

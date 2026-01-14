@@ -93,7 +93,7 @@ fun EditFormContent(
             // Lecturer Section
             item {
                 EditLecturerInputField(
-                    label = "Lecturer Edit",
+                    label = "Teacher Edit",
                     value = entry.lecturer,
                     onValueChange = onLecturerChange,
                     bgColor = inputBgColor

@@ -108,7 +108,7 @@ fun GenerateTimetableInterface(
                         }
 
                         Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-                            Text(text = "Lecturer", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            Text(text = "Teacher", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                             TextField(
                                 value = lecturerName,
                                 onValueChange = { lecturerName = it },

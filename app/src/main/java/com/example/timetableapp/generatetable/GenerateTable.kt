@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.timetableapp.TimetableEntry
+import com.example.timetableapp.R
 
 @Composable
 fun GenerateTimetableInterface(
@@ -53,16 +54,13 @@ fun GenerateTimetableInterface(
     val selectedTimes = remember { mutableStateListOf<String>() }
 
     // --- AVAILABILITY LOGIC ---
-    // A time slot is only "TAKEN" if EVERY selected day is already busy.
     fun isSlotAvailable(time: String): Boolean {
         if (selectedDays.isEmpty()) return true
-
         val occupiedDaysCount = selectedDays.count { day ->
             existingSchedule.any { entry ->
                 val entryParts = entry.dayAndTime.split(" ")
                 val entryDay = entryParts.firstOrNull()?.uppercase()?.trim() ?: ""
                 val entryTime = entryParts.lastOrNull()?.trim() ?: ""
-
                 val d = day.uppercase().trim()
                 val isSameDay = (d == entryDay || d.startsWith(entryDay) || entryDay.startsWith(d))
                 isSameDay && entryTime == time
@@ -86,11 +84,15 @@ fun GenerateTimetableInterface(
                 onSubjectSelected = { subject ->
                     selectedSubject = subject
                     if (subject.uppercase() == "REHAT") teacherName = "-"
-                    currentStep = 2 // FIXED: Removed 'currentSetOf' error here
+                    currentStep = 2
                 },
                 onBack = { currentStep = 0 }
             )
-            2 -> IconPickerScreen(subjectName = selectedSubject, onIconSelected = { selectedIconRes = it; currentStep = 0 }, onBack = { currentStep = 1 })
+            2 -> IconPickerScreen(
+                subjectName = selectedSubject,
+                onIconSelected = { selectedIconRes = it; currentStep = 0 },
+                onBack = { currentStep = 1 }
+            )
             10 -> {
                 Column(modifier = Modifier.fillMaxSize().padding(25.dp)) {
                     Spacer(Modifier.height(50.dp))
@@ -146,7 +148,16 @@ fun GenerateTimetableInterface(
                                         (d == eDay || d.startsWith(eDay) || eDay.startsWith(d)) && eTime == time
                                     }
                                     if (isSpecificDayFree) {
-                                        newEntries.add(TimetableEntry(selectedSubject, teacherName, time, "$day $time", selectedIconRes))
+                                        // FIXED: Using Named Arguments to prevent type mismatch
+                                        newEntries.add(
+                                            TimetableEntry(
+                                                subject = selectedSubject,
+                                                lecturer = teacherName,
+                                                duration = time,
+                                                dayAndTime = "$day $time",
+                                                iconRes = selectedIconRes
+                                            )
+                                        )
                                     }
                                 }
                             }
@@ -208,8 +219,7 @@ fun GenerateTimetableInterface(
     }
 }
 
-// --- REUSABLE COMPONENTS ---
-
+// --- REUSABLE COMPONENTS (Chips and Buttons) ---
 @Composable
 fun DayChip(day: String, isSelected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(

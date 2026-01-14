@@ -20,18 +20,21 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.UUID
 
-import com.example.timetableapp.edittimetable.EditTimetableScreen
+import com.example.timetableapp.EditTimetable.EditTimetableScreen
 import com.example.timetableapp.homepage.HomepageInterface
 import com.example.timetableapp.SubjectView.SubjectInterface
 import com.example.timetableapp.generatetable.GenerateTimetableInterface
 import com.example.timetableapp.TimetableView.TimetableViewScreen
 
+// --- SHARED DATA CLASS ---
 data class TimetableEntry(
+    val id: String = UUID.randomUUID().toString(),
     val subject: String,
     val lecturer: String,
     val duration: String,
-    val dayAndTime: String, // Format: "SUN 07.30"
+    val dayAndTime: String,
     val iconRes: Int? = null
 )
 
@@ -49,17 +52,9 @@ class MainActivity : ComponentActivity() {
 
             val overlayColor = if (isDarkMode) Color.Black.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.2f)
 
-            // Auto-updating list using state management
             val userSchedule = remember {
                 mutableStateListOf<TimetableEntry>().apply {
                     addAll(storage.loadSchedule())
-                }
-            }
-
-            // --- HELPER FUNCTION FOR VALIDATION ---
-            fun isSlotTaken(newDayAndTime: String, currentEntry: TimetableEntry? = null): Boolean {
-                return userSchedule.any {
-                    it.dayAndTime.uppercase().trim() == newDayAndTime.uppercase().trim() && it != currentEntry
                 }
             }
 
@@ -73,83 +68,60 @@ class MainActivity : ComponentActivity() {
 
                 Box(modifier = Modifier.fillMaxSize().background(overlayColor))
 
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = Color.Transparent
-                ) {
+                Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) {
                     when (currentScreen) {
-                        "front" -> {
-                            TimetableInterface(onGenerateClick = { currentScreen = "home" })
-                        }
-                        "home" -> {
-                            HomepageInterface(
-                                isDarkMode = isDarkMode,
-                                onDarkModeToggle = { isDarkMode = !isDarkMode },
-                                onGenerateNavClick = { currentScreen = "generate" },
-                                onEditNavClick = { currentScreen = "edit" },
-                                onSubjectNavClick = { currentScreen = "subject" },
-                                onTimetableClick = { currentScreen = "view_timetable" },
-                                onResetConfirm = {
-                                    storage.clearSchedule()
-                                    userSchedule.clear()
-                                    currentScreen = "front"
-                                    Toast.makeText(context, "Timetable Reset Successfully", Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        }
-                        "generate" -> {
-                            GenerateTimetableInterface(
-                                onBackClick = { currentScreen = "home" },
-                                existingSchedule = userSchedule.toList(),
-                                onAddEntries = { newEntries ->
-                                    val conflicts = newEntries.filter { isSlotTaken(it.dayAndTime) }
-                                    if (conflicts.isNotEmpty()) {
-                                        Toast.makeText(context, "Conflict: Some slots already taken!", Toast.LENGTH_LONG).show()
-                                    } else {
-                                        userSchedule.addAll(newEntries)
-                                        storage.saveSchedule(userSchedule.toList())
-                                        Toast.makeText(context, "Added successfully!", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            )
-                        }
-                        "edit" -> {
-                            EditTimetableScreen(
-                                scheduleData = userSchedule.toList(),
-                                onUpdateClick = { updatedEntry ->
-                                    // Logic to find and update the entry
-                                    val index = userSchedule.indexOfFirst {
-                                        // Match by original content if day/subject changed
-                                        it.dayAndTime == updatedEntry.dayAndTime || it.subject == updatedEntry.subject
-                                    }
+                        "front" -> TimetableInterface(onGenerateClick = { currentScreen = "home" })
 
-                                    if (index != -1) {
-                                        userSchedule[index] = updatedEntry
-                                        storage.saveSchedule(userSchedule.toList())
-                                        Toast.makeText(context, "Changes Saved!", Toast.LENGTH_SHORT).show()
-                                        currentScreen = "view_timetable"
-                                    }
-                                },
-                                // FIXED: Added missing onDeleteClick parameter
-                                onDeleteClick = { entryToDelete ->
-                                    userSchedule.remove(entryToDelete)
+                        "home" -> HomepageInterface(
+                            isDarkMode = isDarkMode,
+                            onDarkModeToggle = { isDarkMode = !isDarkMode },
+                            onGenerateNavClick = { currentScreen = "generate" },
+                            onEditNavClick = { currentScreen = "edit" },
+                            onSubjectNavClick = { currentScreen = "subject" },
+                            onTimetableClick = { currentScreen = "view_timetable" },
+                            onResetConfirm = {
+                                storage.clearSchedule()
+                                userSchedule.clear()
+                                currentScreen = "front"
+                                Toast.makeText(context, "Timetable Reset", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+
+                        "generate" -> GenerateTimetableInterface(
+                            onBackClick = { currentScreen = "home" },
+                            existingSchedule = userSchedule.toList(),
+                            onAddEntries = { newEntries ->
+                                userSchedule.addAll(newEntries)
+                                storage.saveSchedule(userSchedule.toList())
+                                // REMINDER: currentScreen = "home" was removed so you can add more items!
+                            }
+                        )
+
+                        "edit" -> EditTimetableScreen(
+                            scheduleData = userSchedule.toList(),
+                            onUpdateClick = { updatedEntry ->
+                                val index = userSchedule.indexOfFirst { it.id == updatedEntry.id }
+                                if (index != -1) {
+                                    userSchedule[index] = updatedEntry
                                     storage.saveSchedule(userSchedule.toList())
-                                    Toast.makeText(context, "Entry Deleted", Toast.LENGTH_SHORT).show()
-                                    // If list is empty, return home, otherwise stay to edit more
-                                    if (userSchedule.isEmpty()) currentScreen = "home"
-                                },
-                                onCancelClick = { currentScreen = "home" }
-                            )
-                        }
-                        "subject" -> {
-                            SubjectInterface(onBackClick = { currentScreen = "home" })
-                        }
-                        "view_timetable" -> {
-                            TimetableViewScreen(
-                                scheduleData = userSchedule.toList(),
-                                onBackClick = { currentScreen = "home" }
-                            )
-                        }
+                                    Toast.makeText(context, "Changes Saved!", Toast.LENGTH_SHORT).show()
+                                    currentScreen = "view_timetable"
+                                }
+                            },
+                            onDeleteClick = { entryToDelete ->
+                                userSchedule.removeIf { it.id == entryToDelete.id }
+                                storage.saveSchedule(userSchedule.toList())
+                                if (userSchedule.isEmpty()) currentScreen = "home"
+                            },
+                            onCancelClick = { currentScreen = "home" }
+                        )
+
+                        "subject" -> SubjectInterface(onBackClick = { currentScreen = "home" })
+
+                        "view_timetable" -> TimetableViewScreen(
+                            scheduleData = userSchedule.toList(),
+                            onBackClick = { currentScreen = "home" }
+                        )
                     }
                 }
             }

@@ -25,6 +25,7 @@ import com.example.timetableapp.PdfExporter
 import com.example.timetableapp.R
 import com.example.timetableapp.TimetableEntry
 
+// Shorthand for the Grid
 fun getSubjectAlias(subject: String): String {
     return when (subject.trim().uppercase()) {
         "BAHASA MELAYU" -> "BM"
@@ -91,7 +92,7 @@ fun TimetableViewScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = switchButtonColor),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text(if (isWeeklyView) "SWITCH TO DAILY" else "SWITCH TO WEEKLY", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(if (isWeeklyView) "SWITCH TO DAILY VIEW" else "SWITCH TO WEEKLY", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -100,7 +101,6 @@ fun TimetableViewScreen(
 @Composable
 fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
     val days = listOf("TIME", "SUN", "MON", "TUE", "WED", "THU")
-    // Unified slots (REHAT row removed, user adds REHAT manually via Generate)
     val allSlots = listOf(
         "7.30-8.00", "8.00-8.30", "8.30-9.00", "9.00-9.30", "9.30-10.00",
         "10.30-11.00", "11.00-11.30", "11.30-12.00", "12.00-12.30", "12.30-1.00"
@@ -130,19 +130,28 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
 @Composable
 fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
     val dayHeaders = listOf("SUN", "MON", "TUE", "WED", "THU")
+    val academicColor = Color(0xFFFDF5E6)
+    val specialColor = Color(0xFFD1D1D1)
 
-    // COLORS
-    val academicColor = Color(0xFFFDF5E6) // Beige
-    val specialColor = Color(0xFFD1D1D1)  // Grey for REHAT/Perhimpunan
+    // Helps match "07.30" with "7.30" and ignores spaces
+    fun normalize(t: String): String = t.replace(" ", "").removePrefix("0").trim()
 
     Row(modifier = Modifier.fillMaxWidth().height(60.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(time, Modifier.weight(1f), fontSize = 8.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black)
 
         dayHeaders.forEach { day ->
+            // Logic to find entry based on Day and Time normalization
             val entry = scheduleData.find { item ->
                 val dayPart = item.dayAndTime.split(" ").firstOrNull()?.uppercase() ?: ""
-                val savedTime = item.dayAndTime.split(" ").lastOrNull()?.trim() ?: ""
-                dayPart.startsWith(day) && savedTime == time.trim()
+                val timePart = item.dayAndTime.split(" ").lastOrNull() ?: ""
+
+                val dayMatch = dayPart.startsWith(day)
+                // Match based on either the duration field OR the time inside dayAndTime string
+                val timeMatch = normalize(item.duration).contains(normalize(time)) ||
+                        normalize(timePart).contains(normalize(time)) ||
+                        normalize(time).contains(normalize(timePart))
+
+                dayMatch && timeMatch
             }
 
             val isSpecial = entry?.subject?.uppercase() == "REHAT" || entry?.subject?.uppercase() == "PERHIMPUNAN"
@@ -171,9 +180,9 @@ fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(2.dp)) {
                         val iconToDraw = if (entry.subject.uppercase() == "PERHIMPUNAN") R.drawable.perhimpunan_icon else entry.iconRes
 
-                        if (iconToDraw != null && !isSpecial) { // Hide icon for REHAT to save space
-                            Image(painter = painterResource(id = iconToDraw), null, Modifier.size(16.dp))
-                        } else if (entry.subject.uppercase() == "PERHIMPUNAN") {
+                        if (iconToDraw != null && !isSpecial) {
+                            Image(painter = painterResource(id = iconToDraw!!), null, Modifier.size(16.dp))
+                        } else if (entry.subject.uppercase() == "PERHIMPUNAN" && iconToDraw != null) {
                             Image(painter = painterResource(id = iconToDraw!!), null, Modifier.size(14.dp))
                         }
 

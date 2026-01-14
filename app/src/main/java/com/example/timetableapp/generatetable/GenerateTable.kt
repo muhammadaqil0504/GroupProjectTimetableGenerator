@@ -1,176 +1,206 @@
 package com.example.timetableapp.generatetable
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.timetableapp.TimetableEntry
-import kotlinx.coroutines.launch
 
 @Composable
 fun GenerateTimetableInterface(
     onBackClick: () -> Unit,
-    onAddEntry: (TimetableEntry) -> Unit,
-    onGenerateAutomatically: () -> Unit
+    existingSchedule: List<TimetableEntry>,
+    onAddEntries: (List<TimetableEntry>) -> Unit
 ) {
-    // Styling Colors
     val inputBgColor = Color(0xFFF5E6D3)
     val buttonGold = Color(0xFFB58B43)
+    val context = LocalContext.current
 
-    // Snackbar (Notice) States
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
-    // Form States
+    var currentStep by remember { mutableIntStateOf(0) }
     var selectedSubject by remember { mutableStateOf("Select Subject") }
     var selectedIconRes by remember { mutableStateOf<Int?>(null) }
-    var lecturerName by remember { mutableStateOf("") }
-    var selectedDuration by remember { mutableStateOf("Select Duration") }
-    var selectedDayOnly by remember { mutableStateOf("Select Day") }
-    var currentStep by remember { mutableIntStateOf(0) }
+    var teacherName by remember { mutableStateOf("") }
 
-    Scaffold(
-        containerColor = Color.Transparent, // Shows the main app background
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                Snackbar(
-                    snackbarData = data,
-                    containerColor = Color(0xFF333333),
-                    contentColor = Color.White,
-                    shape = RoundedCornerShape(8.dp)
-                )
+    val daysList = listOf("SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY")
+    val selectedDays = remember { mutableStateListOf<String>() }
+
+    val timeSlots = listOf(
+        "7.30-8.00", "8.00-8.30", "8.30-9.00", "9.00-9.30", "9.30-10.00",
+        "10.30-11.00", "11.00-11.30", "11.30-12.00", "12.00-12.30", "12.30-1.00"
+    )
+    val selectedTimes = remember { mutableStateListOf<String>() }
+
+    // --- AVAILABILITY LOGIC ---
+    // A time slot is only "TAKEN" if EVERY selected day is already busy.
+    fun isSlotAvailable(time: String): Boolean {
+        if (selectedDays.isEmpty()) return true
+
+        val occupiedDaysCount = selectedDays.count { day ->
+            existingSchedule.any { entry ->
+                val entryParts = entry.dayAndTime.split(" ")
+                val entryDay = entryParts.firstOrNull()?.uppercase()?.trim() ?: ""
+                val entryTime = entryParts.lastOrNull()?.trim() ?: ""
+
+                val d = day.uppercase().trim()
+                val isSameDay = (d == entryDay || d.startsWith(entryDay) || entryDay.startsWith(d))
+                isSameDay && entryTime == time
             }
         }
-    ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            when (currentStep) {
-                1 -> SubjectListScreen(
-                    onSubjectSelected = { selectedSubject = it; currentStep = 2 },
-                    onBack = { currentStep = 0 }
-                )
-                2 -> IconPickerScreen(
-                    subjectName = selectedSubject,
-                    onIconSelected = { selectedIconRes = it; currentStep = 0 },
-                    onBack = { currentStep = 1 }
-                )
-                3 -> DurationSelectionScreen(
-                    onDurationSelected = { selectedDuration = it; currentStep = 0 },
-                    onBack = { currentStep = 0 }
-                )
-                4 -> DayTimeSelectionScreen(
-                    onSelectionComplete = { selectedDayOnly = it; currentStep = 0 },
-                    onBack = { currentStep = 0 }
-                )
-                else -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 25.dp),
-                        horizontalAlignment = Alignment.Start
+        return occupiedDaysCount < selectedDays.size
+    }
+
+    fun resetForm() {
+        selectedSubject = "Select Subject"
+        selectedIconRes = null
+        teacherName = ""
+        selectedDays.clear()
+        selectedTimes.clear()
+        currentStep = 0
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (currentStep) {
+            1 -> SubjectListScreen(
+                onSubjectSelected = { subject ->
+                    selectedSubject = subject
+                    if (subject.uppercase() == "REHAT") teacherName = "-"
+                    currentStep = 2 // FIXED: Removed 'currentSetOf' error here
+                },
+                onBack = { currentStep = 0 }
+            )
+            2 -> IconPickerScreen(subjectName = selectedSubject, onIconSelected = { selectedIconRes = it; currentStep = 0 }, onBack = { currentStep = 1 })
+            10 -> {
+                Column(modifier = Modifier.fillMaxSize().padding(25.dp)) {
+                    Spacer(Modifier.height(50.dp))
+                    Text("Schedule for $selectedSubject", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+
+                    Spacer(Modifier.height(20.dp))
+                    Text("1. Select Days (Sun-Thu):", color = Color.White, fontSize = 14.sp)
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 10.dp)) {
+                        daysList.chunked(3).forEach { rowDays ->
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                rowDays.forEach { day ->
+                                    DayChip(day, selectedDays.contains(day), modifier = Modifier.weight(1f)) {
+                                        if (selectedDays.contains(day)) selectedDays.remove(day)
+                                        else selectedDays.add(day)
+                                    }
+                                }
+                                if (rowDays.size < 3) Spacer(modifier = Modifier.weight((3 - rowDays.size).toFloat()))
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+                    Text("2. Select Times:", color = Color.White, fontSize = 14.sp)
+
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.weight(1f).padding(vertical = 10.dp)
                     ) {
-                        Spacer(Modifier.height(50.dp))
-                        IconButton(onClick = onBackClick) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
-                        }
-
-                        Text(
-                            text = "Generate Timetable",
-                            color = Color.White,
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 20.dp)
-                        )
-
-                        InputField("Subject", selectedSubject, true, inputBgColor) { currentStep = 1 }
-
-                        if (selectedIconRes != null) {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-                                Text("Selected Icon: ", color = Color.White, fontSize = 14.sp)
-                                Surface(modifier = Modifier.size(40.dp), color = inputBgColor, shape = RoundedCornerShape(8.dp)) {
-                                    Image(painter = painterResource(id = selectedIconRes!!), contentDescription = null, modifier = Modifier.padding(4.dp))
+                        items(timeSlots) { time ->
+                            val available = isSlotAvailable(time)
+                            TimeChip(time, selectedTimes.contains(time), available) {
+                                if (available) {
+                                    if (selectedTimes.contains(time)) selectedTimes.remove(time)
+                                    else selectedTimes.add(time)
                                 }
                             }
                         }
+                    }
 
-                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-                            Text(text = "Teacher", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                            TextField(
-                                value = lecturerName,
-                                onValueChange = { lecturerName = it },
-                                modifier = Modifier.fillMaxWidth().height(55.dp),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = inputBgColor,
-                                    unfocusedContainerColor = inputBgColor,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    cursorColor = Color.Black
-                                ),
-                                shape = RoundedCornerShape(8.dp),
-                                singleLine = true
-                            )
-                        }
-
-                        InputField("Duration", selectedDuration, true, inputBgColor) { currentStep = 3 }
-                        InputField("Day", selectedDayOnly, true, inputBgColor) { currentStep = 4 }
-
-                        Spacer(Modifier.height(30.dp))
-
-                        // --- ADD BUTTON WITH NOTICE ---
-                        GenerateActionButton("ADD", Icons.Default.AddCircle, buttonGold) {
-                            if (selectedSubject != "Select Subject" &&
-                                selectedDayOnly != "Select Day" &&
-                                selectedDuration != "Select Duration") {
-
-                                onAddEntry(
-                                    TimetableEntry(
-                                        subject = selectedSubject,
-                                        lecturer = lecturerName,
-                                        duration = selectedDuration,
-                                        dayAndTime = "$selectedDayOnly $selectedDuration",
-                                        iconRes = selectedIconRes
-                                    )
-                                )
-
-                                // Show Notice
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("Subject added to your schedule!")
+                    GenerateActionButton("SAVE AND GENERATE", Icons.Default.Check, buttonGold) {
+                        if (selectedDays.isNotEmpty() && selectedTimes.isNotEmpty()) {
+                            val newEntries = mutableListOf<TimetableEntry>()
+                            selectedDays.forEach { day ->
+                                selectedTimes.forEach { time ->
+                                    val isSpecificDayFree = !existingSchedule.any { entry ->
+                                        val parts = entry.dayAndTime.split(" ")
+                                        val eDay = parts.firstOrNull()?.uppercase()?.trim() ?: ""
+                                        val eTime = parts.lastOrNull()?.trim() ?: ""
+                                        val d = day.uppercase().trim()
+                                        (d == eDay || d.startsWith(eDay) || eDay.startsWith(d)) && eTime == time
+                                    }
+                                    if (isSpecificDayFree) {
+                                        newEntries.add(TimetableEntry(selectedSubject, teacherName, time, "$day $time", selectedIconRes))
+                                    }
                                 }
-
-                                // Reset Form
-                                selectedSubject = "Select Subject"
-                                selectedIconRes = null
-                                lecturerName = ""
-                                selectedDuration = "Select Duration"
-                                selectedDayOnly = "Select Day"
                             }
-                        }
-
-                        Spacer(Modifier.height(12.dp))
-
-                        // --- GENERATE AUTO BUTTON WITH NOTICE ---
-                        GenerateActionButton("Generate Automatically", Icons.Default.Check, buttonGold) {
-                            onGenerateAutomatically()
-
-                            // Show Notice
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Full schedule generated! Check Timetable View.")
+                            if (newEntries.isNotEmpty()) {
+                                onAddEntries(newEntries)
+                                Toast.makeText(context, "Added ${newEntries.size} slots!", Toast.LENGTH_SHORT).show()
+                                resetForm()
+                            } else {
+                                Toast.makeText(context, "Slots already taken on these days!", Toast.LENGTH_SHORT).show()
                             }
+                        } else {
+                            Toast.makeText(context, "Pick day and time", Toast.LENGTH_SHORT).show()
                         }
+                    }
+
+                    TextButton(onClick = { currentStep = 0 }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                        Text("Back to Info", color = Color.White)
+                    }
+                }
+            }
+            else -> {
+                Column(modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp)) {
+                    Spacer(Modifier.height(50.dp))
+                    IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White) }
+                    Text("Subject Details", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(20.dp))
+
+                    InputField("Subject", selectedSubject, true, inputBgColor) { currentStep = 1 }
+
+                    Text("Teacher Name", color = Color.White, modifier = Modifier.padding(top = 10.dp))
+                    TextField(
+                        value = teacherName,
+                        onValueChange = { if (selectedSubject.uppercase() != "REHAT") teacherName = it },
+                        modifier = Modifier.fillMaxWidth().height(55.dp),
+                        enabled = selectedSubject.uppercase() != "REHAT",
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = inputBgColor,
+                            unfocusedContainerColor = inputBgColor,
+                            disabledContainerColor = Color.LightGray.copy(alpha = 0.5f)
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true
+                    )
+
+                    Spacer(Modifier.height(40.dp))
+                    Button(
+                        onClick = {
+                            if (selectedSubject != "Select Subject" && teacherName.isNotBlank()) currentStep = 10
+                            else Toast.makeText(context, "Fill details", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.fillMaxWidth().height(55.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = buttonGold)
+                    ) {
+                        Text("NEXT", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -178,37 +208,55 @@ fun GenerateTimetableInterface(
     }
 }
 
+// --- REUSABLE COMPONENTS ---
+
 @Composable
-fun InputField(label: String, value: String, isDropdown: Boolean, bgColor: Color, onClick: () -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        Text(text = label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-        Surface(
-            modifier = Modifier.fillMaxWidth().height(50.dp).clickable { onClick() },
-            shape = RoundedCornerShape(8.dp),
-            color = bgColor
-        ) {
-            Box(modifier = Modifier.padding(horizontal = 15.dp), contentAlignment = Alignment.CenterStart) {
-                Text(text = value, color = Color.Black)
-                if (isDropdown) {
-                    Icon(Icons.Default.KeyboardArrowDown, null, Modifier.align(Alignment.CenterEnd), Color.Black)
-                }
-            }
-        }
+fun DayChip(day: String, isSelected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Box(
+        modifier = modifier
+            .height(45.dp)
+            .background(if (isSelected) Color(0xFFB58B43) else Color.White, RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .border(1.dp, if (isSelected) Color.White else Color.Black, RoundedCornerShape(8.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = day, color = if (isSelected) Color.White else Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun TimeChip(time: String, isSelected: Boolean, isAvailable: Boolean, onClick: () -> Unit) {
+    val bgColor = when {
+        !isAvailable -> Color.Gray.copy(alpha = 0.5f)
+        isSelected -> Color(0xFFB58B43)
+        else -> Color(0xFFF5E6D3)
+    }
+    Box(
+        modifier = Modifier.fillMaxWidth().height(45.dp).background(bgColor, RoundedCornerShape(8.dp))
+            .clickable(enabled = isAvailable) { onClick() }
+            .border(if (isSelected) 1.dp else 0.dp, Color.White, RoundedCornerShape(8.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = if (isAvailable) time else "TAKEN", fontSize = 12.sp, color = if (isSelected || !isAvailable) Color.White else Color.Black)
     }
 }
 
 @Composable
 fun GenerateActionButton(text: String, icon: ImageVector, color: Color, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(55.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = color),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(24.dp))
-            Spacer(Modifier.width(10.dp))
-            Text(text = text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+    Button(onClick = onClick, modifier = Modifier.fillMaxWidth().height(55.dp), colors = ButtonDefaults.buttonColors(containerColor = color), shape = RoundedCornerShape(8.dp)) {
+        Icon(icon, null); Spacer(Modifier.width(10.dp)); Text(text, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun InputField(label: String, value: String, isDropdown: Boolean, bgColor: Color, onClick: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Text(label, color = Color.White, fontSize = 14.sp)
+        Surface(modifier = Modifier.fillMaxWidth().height(50.dp).clickable { onClick() }, shape = RoundedCornerShape(8.dp), color = bgColor) {
+            Box(Modifier.padding(horizontal = 15.dp), contentAlignment = Alignment.CenterStart) {
+                Text(value, color = Color.Black)
+                if (isDropdown) Icon(Icons.Default.KeyboardArrowDown, null, Modifier.align(Alignment.CenterEnd))
+            }
         }
     }
 }

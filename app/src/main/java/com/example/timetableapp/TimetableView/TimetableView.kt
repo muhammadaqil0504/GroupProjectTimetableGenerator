@@ -25,18 +25,18 @@ import com.example.timetableapp.PdfExporter
 import com.example.timetableapp.R
 import com.example.timetableapp.TimetableEntry
 
-// Helper function for Shortforms
 fun getSubjectAlias(subject: String): String {
-    return when (subject.trim()) {
-        "Bahasa Melayu" -> "BM"
-        "Bahasa Inggeris" -> "BI"
-        "Matematik" -> "MAT"
-        "Sains" -> "SNS"
-        "Pendidikan Islam" -> "PI"
-        "Muzik" -> "MZ"
-        "Sejarah" -> "SEJ"
-        "Seni Visual" -> "PSV"
-        "Perhimpunan" -> "PER"
+    return when (subject.trim().uppercase()) {
+        "BAHASA MELAYU" -> "BM"
+        "BAHASA INGGERIS" -> "BI"
+        "MATEMATIK" -> "MAT"
+        "SAINS" -> "SNS"
+        "PENDIDIKAN ISLAM" -> "PI"
+        "MUZIK" -> "MZ"
+        "SEJARAH" -> "SEJ"
+        "SENI VISUAL" -> "PSV"
+        "PERHIMPUNAN" -> "PER"
+        "REHAT" -> "REHAT"
         else -> if (subject.length > 5) subject.take(4) + ".." else subject
     }
 }
@@ -52,82 +52,46 @@ fun TimetableViewScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 15.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 15.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(50.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
-                    )
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
                 }
-
                 Text(
                     text = if (isWeeklyView) "Weekly" else "Daily",
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
+                    color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-
-                // FIXED: Export button now captures the result and shows a Toast
                 Button(
                     onClick = {
                         val file = PdfExporter.exportTimetableToPdf(context, scheduleData)
-                        if (file != null) {
-                            Toast.makeText(context, "PDF Exported to Downloads folder", Toast.LENGTH_LONG).show()
-                        } else {
-                            Toast.makeText(context, "Export failed. Please check permissions.", Toast.LENGTH_SHORT).show()
-                        }
+                        if (file != null) Toast.makeText(context, "PDF Exported", Toast.LENGTH_LONG).show()
                     },
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f)),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                     modifier = Modifier.height(35.dp)
                 ) {
-                    Text(
-                        text = "EXPORT PDF",
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("EXPORT PDF", color = Color.White, fontSize = 10.sp)
                 }
             }
 
             Spacer(Modifier.height(20.dp))
 
             Box(modifier = Modifier.weight(1f)) {
-                if (isWeeklyView) {
-                    WeeklyTableLayout(scheduleData)
-                } else {
-                    DailyListLayout(scheduleData)
-                }
+                if (isWeeklyView) WeeklyTableLayout(scheduleData) else DailyListLayout(scheduleData)
             }
 
             Button(
                 onClick = { isWeeklyView = !isWeeklyView },
-                modifier = Modifier
-                    .padding(vertical = 20.dp)
-                    .fillMaxWidth()
-                    .height(55.dp),
+                modifier = Modifier.padding(vertical = 20.dp).fillMaxWidth().height(55.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = switchButtonColor),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text(
-                    text = if (isWeeklyView) "SWITCH TO DAILY" else "SWITCH TO WEEKLY",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text(if (isWeeklyView) "SWITCH TO DAILY" else "SWITCH TO WEEKLY", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -135,55 +99,29 @@ fun TimetableViewScreen(
 
 @Composable
 fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
-    val days = listOf("", "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
-
-    val morningSlots = listOf("7.30-8.00", "8.00-8.30", "8.30-9.00", "9.00-9.30", "9.30-10.00")
-    val afternoonSlots = listOf(
-        "10.30-11.00", "11.00-11.30", "11.30-12.00",
-        "12.00-12.30", "12.30-1.00", "1.00-1.30", "1.30-2.00"
+    val days = listOf("TIME", "SUN", "MON", "TUE", "WED", "THU")
+    // Unified slots (REHAT row removed, user adds REHAT manually via Generate)
+    val allSlots = listOf(
+        "7.30-8.00", "8.00-8.30", "8.30-9.00", "9.00-9.30", "9.30-10.00",
+        "10.30-11.00", "11.00-11.30", "11.30-12.00", "12.00-12.30", "12.30-1.00"
     )
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White.copy(alpha = 0.95f), RoundedCornerShape(8.dp))
-            .padding(4.dp)
+            .padding(6.dp)
             .border(1.dp, Color.Black, RoundedCornerShape(8.dp))
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
             days.forEach { day ->
-                Text(
-                    text = day,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 10.sp,
-                    color = Color.Black
-                )
+                Text(day, Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color.Black)
             }
         }
 
         LazyColumn {
-            items(morningSlots.size) { index ->
-                TimetableRow(time = morningSlots[index], scheduleData = scheduleData)
-            }
-
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp, horizontal = 2.dp)
-                        .height(25.dp)
-                        .background(Color(0xFFD1D1D1), RoundedCornerShape(4.dp))
-                        .border(0.5.dp, Color.Black, RoundedCornerShape(4.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("REHAT", fontWeight = FontWeight.Bold, fontSize = 10.sp, color = Color.DarkGray)
-                }
-            }
-
-            items(afternoonSlots.size) { index ->
-                TimetableRow(time = afternoonSlots[index], scheduleData = scheduleData)
+            items(allSlots.size) { index ->
+                TimetableRow(time = allSlots[index], scheduleData = scheduleData)
             }
         }
     }
@@ -191,41 +129,23 @@ fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
 
 @Composable
 fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
-    val dayHeaders = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
-    val cellBgColor = Color(0xFFFDF5E6)
+    val dayHeaders = listOf("SUN", "MON", "TUE", "WED", "THU")
 
-    Row(
-        modifier = Modifier.fillMaxWidth().height(55.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = time,
-            modifier = Modifier.weight(1f),
-            fontSize = 7.sp,
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 8.sp,
-            color = Color.Black
-        )
+    // COLORS
+    val academicColor = Color(0xFFFDF5E6) // Beige
+    val specialColor = Color(0xFFD1D1D1)  // Grey for REHAT/Perhimpunan
+
+    Row(modifier = Modifier.fillMaxWidth().height(60.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(time, Modifier.weight(1f), fontSize = 8.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black)
 
         dayHeaders.forEach { day ->
             val entry = scheduleData.find { item ->
-                val dayMatch = item.dayAndTime.uppercase().contains(day)
-
-                fun normalize(t: String): String {
-                    return t.uppercase()
-                        .replace(" AM", "")
-                        .replace(" PM", "")
-                        .replace(":", ".")
-                        .split("-")[0]
-                        .trim()
-                }
-
-                val savedTime = normalize(item.dayAndTime.split(" ").lastOrNull() ?: "")
-                val slotStart = normalize(time)
-
-                dayMatch && (savedTime == slotStart || "0$savedTime" == slotStart || savedTime == "0$slotStart")
+                val dayPart = item.dayAndTime.split(" ").firstOrNull()?.uppercase() ?: ""
+                val savedTime = item.dayAndTime.split(" ").lastOrNull()?.trim() ?: ""
+                dayPart.startsWith(day) && savedTime == time.trim()
             }
+
+            val isSpecial = entry?.subject?.uppercase() == "REHAT" || entry?.subject?.uppercase() == "PERHIMPUNAN"
 
             Box(
                 modifier = Modifier
@@ -233,32 +153,28 @@ fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
                     .fillMaxHeight()
                     .padding(1.dp)
                     .background(
-                        if (entry != null) cellBgColor else Color.White.copy(alpha = 0.3f),
-                        RoundedCornerShape(2.dp)
+                        color = when {
+                            entry == null -> Color.Transparent
+                            isSpecial -> specialColor
+                            else -> academicColor
+                        },
+                        shape = RoundedCornerShape(4.dp)
                     )
                     .border(
-                        if (entry != null) 0.5.dp else 0.1.dp,
-                        if (entry != null) Color.Black else Color.Gray,
-                        RoundedCornerShape(2.dp)
+                        width = 0.5.dp,
+                        color = if (entry != null) Color.Black else Color.LightGray.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(4.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 if (entry != null) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(1.dp)
-                    ) {
-                        val iconToDraw = when {
-                            entry.subject.equals("Perhimpunan", ignoreCase = true) -> R.drawable.perhimpunan_icon
-                            else -> entry.iconRes
-                        }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(2.dp)) {
+                        val iconToDraw = if (entry.subject.uppercase() == "PERHIMPUNAN") R.drawable.perhimpunan_icon else entry.iconRes
 
-                        if (iconToDraw != null) {
-                            Image(
-                                painter = painterResource(id = iconToDraw),
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
+                        if (iconToDraw != null && !isSpecial) { // Hide icon for REHAT to save space
+                            Image(painter = painterResource(id = iconToDraw), null, Modifier.size(16.dp))
+                        } else if (entry.subject.uppercase() == "PERHIMPUNAN") {
+                            Image(painter = painterResource(id = iconToDraw!!), null, Modifier.size(14.dp))
                         }
 
                         Text(
@@ -266,8 +182,6 @@ fun TimetableRow(time: String, scheduleData: List<TimetableEntry>) {
                             fontSize = 8.sp,
                             fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.Center,
-                            lineHeight = 9.sp,
-                            maxLines = 1,
                             color = Color.Black
                         )
                     }

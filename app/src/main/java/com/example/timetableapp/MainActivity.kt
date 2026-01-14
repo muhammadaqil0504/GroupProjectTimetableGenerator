@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
 
             val overlayColor = if (isDarkMode) Color.Black.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.2f)
 
-            // Using mutableStateListOf so the UI updates automatically when items are added/deleted
+            // Auto-updating list using state management
             val userSchedule = remember {
                 mutableStateListOf<TimetableEntry>().apply {
                     addAll(storage.loadSchedule())
@@ -63,7 +63,7 @@ class MainActivity : ComponentActivity() {
             // --- HELPER FUNCTION FOR VALIDATION ---
             fun isSlotTaken(newDayAndTime: String, currentIndex: Int = -1): Boolean {
                 return userSchedule.filterIndexed { index, _ -> index != currentIndex }
-                    .any { it.dayAndTime.uppercase() == newDayAndTime.uppercase() }
+                    .any { it.dayAndTime.uppercase().trim() == newDayAndTime.uppercase().trim() }
             }
 
             Box(modifier = Modifier.fillMaxSize()) {
@@ -101,20 +101,22 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         "generate" -> {
+                            // UPDATED: Pass existingSchedule to enable slot filtering
                             GenerateTimetableInterface(
                                 onBackClick = { currentScreen = "home" },
-                                onAddEntry = { newEntry ->
-                                    if (isSlotTaken(newEntry.dayAndTime)) {
-                                        Toast.makeText(context, "This day and time has been filled!", Toast.LENGTH_SHORT).show()
+                                existingSchedule = userSchedule.toList(),
+                                onAddEntries = { newEntries ->
+                                    // Secondary check for safety
+                                    val conflicts = newEntries.filter { isSlotTaken(it.dayAndTime) }
+
+                                    if (conflicts.isNotEmpty()) {
+                                        val conflictNames = conflicts.joinToString(", ") { it.dayAndTime }
+                                        Toast.makeText(context, "Error: $conflictNames already taken!", Toast.LENGTH_LONG).show()
                                     } else {
-                                        userSchedule.add(newEntry)
+                                        userSchedule.addAll(newEntries)
                                         storage.saveSchedule(userSchedule.toList())
-                                        Toast.makeText(context, "Subject Added!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Added ${newEntries.size} slots successfully!", Toast.LENGTH_SHORT).show()
                                     }
-                                },
-                                onGenerateAutomatically = {
-                                    storage.saveSchedule(userSchedule.toList())
-                                    currentScreen = "view_timetable"
                                 }
                             )
                         }
@@ -127,8 +129,7 @@ class MainActivity : ComponentActivity() {
                                     currentScreen = "edit"
                                 },
                                 onDeleteEntry = { index ->
-                                    // Remove entry from the list and update storage
-                                    if (index >= 0 && index < userSchedule.size) {
+                                    if (index in userSchedule.indices) {
                                         userSchedule.removeAt(index)
                                         storage.saveSchedule(userSchedule.toList())
                                         Toast.makeText(context, "Entry deleted", Toast.LENGTH_SHORT).show()
@@ -144,16 +145,16 @@ class MainActivity : ComponentActivity() {
                                     entryToEdit = currentEntry,
                                     onUpdateClick = { updatedEntry ->
                                         if (isSlotTaken(updatedEntry.dayAndTime, editIndex)) {
-                                            Toast.makeText(context, "This day and time has been filled!", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "Conflict with another entry!", Toast.LENGTH_SHORT).show()
                                         } else {
-                                            if (editIndex != -1 && editIndex < userSchedule.size) {
+                                            if (editIndex in userSchedule.indices) {
                                                 userSchedule[editIndex] = updatedEntry
+                                                storage.saveSchedule(userSchedule.toList())
+                                                entryToEdit = null
+                                                editIndex = -1
+                                                currentScreen = "view_timetable"
+                                                Toast.makeText(context, "Updated Successfully!", Toast.LENGTH_SHORT).show()
                                             }
-                                            storage.saveSchedule(userSchedule.toList())
-                                            entryToEdit = null
-                                            editIndex = -1
-                                            currentScreen = "view_timetable"
-                                            Toast.makeText(context, "Updated Successfully!", Toast.LENGTH_SHORT).show()
                                         }
                                     },
                                     onCancelClick = {

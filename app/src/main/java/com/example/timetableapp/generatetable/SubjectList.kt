@@ -17,9 +17,10 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun SubjectListScreen(onSubjectSelected: (String) -> Unit, onBack: () -> Unit) {
-    // UPDATED: Added "Perhimpunan" to the list so users can pick it manually
+    // UPDATED: Focused list with REHAT and Perhimpunan, removing Geografi and RBT
     val subjects = listOf(
-        "Perhimpunan", // New option
+        "REHAT",
+        "Perhimpunan",
         "Bahasa Melayu",
         "Bahasa Inggeris",
         "Matematik",
@@ -31,15 +32,16 @@ fun SubjectListScreen(onSubjectSelected: (String) -> Unit, onBack: () -> Unit) {
         "Seni Visual"
     )
 
-    // button color
+    // Button and Text Styling
     val itemBgColor = Color(0xFFF5E6D3)
-    // text color - adjusted for better contrast
     val itemTextColor = Color(0xFF3E5A51)
+    val specialItemColor = Color(0xFFB58B43) // Gold color for REHAT/Perhimpunan
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp)) {
             Spacer(Modifier.height(50.dp))
 
+            // Header Row
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
                     Icon(
@@ -52,7 +54,7 @@ fun SubjectListScreen(onSubjectSelected: (String) -> Unit, onBack: () -> Unit) {
                 Text(
                     text = "Select Subject",
                     color = Color.White,
-                    fontSize = 24.sp,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -62,23 +64,28 @@ fun SubjectListScreen(onSubjectSelected: (String) -> Unit, onBack: () -> Unit) {
             // Scrollable List of Subjects
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp) // Better spacing between buttons
+                contentPadding = PaddingValues(bottom = 40.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(subjects) { subject ->
+                    // Logic to highlight REHAT or Perhimpunan
+                    val isSpecial = subject == "REHAT" || subject == "Perhimpunan"
+
                     Button(
                         onClick = { onSubjectSelected(subject) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(60.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = itemBgColor),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                            .height(65.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isSpecial) specialItemColor else itemBgColor
+                        ),
+                        shape = RoundedCornerShape(15.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                     ) {
                         Text(
                             text = subject,
-                            color = itemTextColor,
-                            fontWeight = FontWeight.ExtraBold,
+                            color = if (isSpecial) Color.White else itemTextColor,
+                            fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
                         )
                     }

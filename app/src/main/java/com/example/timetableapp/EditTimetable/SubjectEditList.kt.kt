@@ -20,14 +20,15 @@ fun SubjectEditScreen(
     onSubjectSelected: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    // UPDATED: Added Perhimpunan to the list
+    // UPDATED: Standardized list to match Generate screen
     val subjects = listOf(
+        "REHAT",
         "Perhimpunan",
         "Bahasa Melayu",
         "Bahasa Inggeris",
         "Matematik",
         "Sains",
-        "Pendidikan Islam / Moral",
+        "Pendidikan Islam",
         "Sejarah",
         "PJPK",
         "Muzik",
@@ -35,6 +36,8 @@ fun SubjectEditScreen(
     )
 
     val itemBgColor = Color(0xFFF5E6D3)
+    val itemTextColor = Color(0xFF3E5A51)
+    val specialItemColor = Color(0xFFB58B43) // Gold color for REHAT/Perhimpunan
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -54,7 +57,7 @@ fun SubjectEditScreen(
             }
 
             Text(
-                text = "Subjects",
+                text = "Edit Subject",
                 color = Color.White,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
@@ -68,19 +71,23 @@ fun SubjectEditScreen(
                 contentPadding = PaddingValues(bottom = 30.dp)
             ) {
                 items(subjects) { subject ->
+                    val isSpecial = subject == "REHAT" || subject == "Perhimpunan"
+
                     Button(
                         onClick = { onSubjectSelected(subject) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(55.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = itemBgColor),
-                        shape = RoundedCornerShape(8.dp),
+                            .height(60.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isSpecial) specialItemColor else itemBgColor
+                        ),
+                        shape = RoundedCornerShape(12.dp), // Slightly more rounded for modern look
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                     ) {
                         Text(
                             text = subject,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold,
+                            color = if (isSpecial) Color.White else itemTextColor,
+                            fontWeight = FontWeight.ExtraBold,
                             fontSize = 18.sp
                         )
                     }

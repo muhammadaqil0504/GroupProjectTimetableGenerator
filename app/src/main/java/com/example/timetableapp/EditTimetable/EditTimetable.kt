@@ -1,79 +1,281 @@
-package com.example.timetableapp.EditTimetable
+package com.example.timetableapp.edittimetable
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.timetableapp.TimetableEntry
 
 @Composable
 fun EditTimetableScreen(
-    entryToEdit: TimetableEntry,
+    scheduleData: List<TimetableEntry>,
     onUpdateClick: (TimetableEntry) -> Unit,
+    onDeleteClick: (TimetableEntry) -> Unit,
     onCancelClick: () -> Unit
 ) {
-    // Local state to hold edits before saving
-    var editedEntry by remember { mutableStateOf(entryToEdit) }
-
-    // Navigation state: 0=Main Form, 1=Subject, 2=Icon, 3=Duration, 4=Day/Time
+    // 0: Select Subject, 1: Select Slot, 2: Main Form
     var currentStep by remember { mutableIntStateOf(0) }
+    var selectedSubjectFilter by remember { mutableStateOf("") }
+    var editedEntry by remember { mutableStateOf<TimetableEntry?>(null) }
 
-    when (currentStep) {
-        // STEP 1: SUBJECT SELECTION
-        1 -> SubjectEditScreen(
-            onSubjectSelected = { selectedSubject ->
-                editedEntry = editedEntry.copy(subject = selectedSubject)
-                currentStep = 2 // Move to Icon selection automatically
-            },
-            onBack = { currentStep = 0 }
-        )
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (currentStep) {
+            // STEP 0: SELECT THE SUBJECT (e.g., Math, Science)
+            0 -> {
+                val availableSubjects = scheduleData.map { it.subject }.distinct().sorted()
+                SelectionListLayout(title = "Select Subject", onBack = onCancelClick) {
+                    items(availableSubjects) { subject ->
+                        EditChoiceCard(
+                            title = subject,
+                            subtitle = "Tap to see all time slots"
+                        ) {
+                            selectedSubjectFilter = subject
+                            currentStep = 1
+                        }
+                    }
+                }
+            }
 
-        // STEP 2: ICON SELECTION
-        2 -> IconPickerScreen(
-            subjectName = editedEntry.subject,
-            currentIconRes = editedEntry.iconRes,
-            onIconSelected = { selectedIcon ->
-                editedEntry = editedEntry.copy(iconRes = selectedIcon)
-                currentStep = 0 // Return to main form
-            },
-            onBack = { currentStep = 1 }
-        )
+            // STEP 1: SELECT THE SPECIFIC SLOT (e.g., MON 08.00)
+            1 -> {
+                val slots = scheduleData.filter { it.subject == selectedSubjectFilter }
+                SelectionListLayout(title = "Select Slot", onBack = { currentStep = 0 }) {
+                    items(slots) { entry ->
+                        EditChoiceCard(
+                            title = entry.dayAndTime,
+                            subtitle = "Teacher: ${entry.lecturer}",
+                            showDelete = true,
+                            onDelete = { onDeleteClick(entry) }
+                        ) {
+                            editedEntry = entry
+                            currentStep = 2
+                        }
+                    }
+                }
+            }
 
-        // STEP 3: DURATION SELECTION (FIXED TO SYNC WITH WEEKLY VIEW)
-        3 -> EditDurationScreen(
-            // We pass the current day so the Duration screen can rebuild the dayAndTime string
-            currentDay = editedEntry.dayAndTime.split(" ").firstOrNull() ?: "SUN",
-            onDurationSelected = { selectedDuration, newDayAndTime ->
-                // CRITICAL: We update BOTH fields so Weekly View finds the correct slot
-                editedEntry = editedEntry.copy(
-                    duration = selectedDuration,
-                    dayAndTime = newDayAndTime
-                )
-                currentStep = 0
-            },
-            onBack = { currentStep = 0 }
-        )
+            // STEP 2: THE ACTUAL EDIT FORM
+            2 -> {
+                editedEntry?.let { entry ->
+                    EditFormContent(
+                        entry = entry,
+                        onLecturerChange = { newLecturer ->
+                            editedEntry = editedEntry?.copy(lecturer = newLecturer)
+                        },
+                        onSave = { editedEntry?.let { onUpdateClick(it) } },
+                        onDelete = { editedEntry?.let { onDeleteClick(it) } },
+                        onCancel = { currentStep = 1 },
+                        // These would link to your existing picker screens
+                        onSubjectFieldClick = { /* Navigate to Subject Picker */ },
+                        onIconFieldClick = { /* Navigate to Icon Picker */ },
+                        onDurationFieldClick = { /* Navigate to Duration Picker */ },
+                        onDayTimeFieldClick = { /* Navigate to Day Picker */ }
+                    )
+                }
+            }
+        }
+    }
+}
 
-        // STEP 4: DAY SELECTION (FIXED TO PRESERVE TIME)
-        4 -> EditDaySelectionScreen(
-            // Pass the time part only (e.g., "08.00")
-            currentTime = editedEntry.dayAndTime.split(" ").lastOrNull()?.replace(":", ".") ?: "08.00",
-            onSelectionComplete = { selectedDayTime ->
-                editedEntry = editedEntry.copy(dayAndTime = selectedDayTime)
-                currentStep = 0
-            },
-            onBack = { currentStep = 0 }
+@Composable
+fun SelectionListLayout(
+    title: String,
+    onBack: () -> Unit,
+    content: LazyListScope.() -> Unit // LazyListScope allows the use of 'items'
+) {
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp)) {
+        Spacer(Modifier.height(50.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+            }
+            Text(title, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(20.dp))
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize(),
+            content = content
         )
+    }
+}
 
-        // STEP 0: THE MAIN EDIT FORM
-        else -> EditFormContent(
-            entry = editedEntry,
-            onSubjectFieldClick = { currentStep = 1 },
-            onIconFieldClick = { currentStep = 2 },
-            onDurationFieldClick = { currentStep = 3 },
-            onDayTimeFieldClick = { currentStep = 4 },
-            onLecturerChange = { newLecturer ->
-                editedEntry = editedEntry.copy(lecturer = newLecturer)
-            },
-            onSave = { onUpdateClick(editedEntry) },
-            onCancel = onCancelClick
-        )
+@Composable
+fun EditChoiceCard(
+    title: String,
+    subtitle: String,
+    showDelete: Boolean = false,
+    onDelete: (() -> Unit)? = null,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5E6D3)),
+        shape = RoundedCornerShape(10.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Black)
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+                Text(subtitle, fontSize = 14.sp, color = Color.DarkGray)
+            }
+            if (showDelete && onDelete != null) {
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, "Delete", tint = Color(0xFFFF3B30))
+                }
+            }
+            Icon(Icons.Default.Edit, "Edit", tint = Color(0xFFB58B43))
+        }
+    }
+}
+
+@Composable
+fun EditFormContent(
+    entry: TimetableEntry,
+    onSubjectFieldClick: () -> Unit,
+    onIconFieldClick: () -> Unit,
+    onDurationFieldClick: () -> Unit,
+    onDayTimeFieldClick: () -> Unit,
+    onLecturerChange: (String) -> Unit,
+    onSave: () -> Unit,
+    onDelete: () -> Unit,
+    onCancel: () -> Unit
+) {
+    val inputBgColor = Color(0xFFF5E6D3)
+    val isRehat = entry.subject.uppercase() == "REHAT"
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 25.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        item {
+            Spacer(Modifier.height(50.dp))
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onCancel) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                }
+                Text("Edit Details", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(20.dp))
+        }
+
+        item {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                Column {
+                    Text("Icon", color = Color.White, fontSize = 14.sp)
+                    Surface(
+                        onClick = onIconFieldClick,
+                        modifier = Modifier.size(60.dp).padding(top = 4.dp),
+                        color = inputBgColor,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            entry.iconRes?.let {
+                                Image(painter = painterResource(id = it), null, Modifier.size(35.dp))
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.width(15.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    ReadOnlyField("Subject", entry.subject, inputBgColor, onSubjectFieldClick)
+                }
+            }
+            Spacer(Modifier.height(15.dp))
+        }
+
+        item {
+            Text("Teacher Name", color = Color.White, fontSize = 14.sp)
+            TextField(
+                value = if (isRehat) "-" else entry.lecturer,
+                onValueChange = { if (!isRehat) onLecturerChange(it) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isRehat,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = inputBgColor,
+                    unfocusedContainerColor = inputBgColor,
+                    disabledContainerColor = Color.Gray.copy(alpha = 0.3f),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                ),
+                shape = RoundedCornerShape(8.dp)
+            )
+            Spacer(Modifier.height(15.dp))
+        }
+
+        item {
+            val dayOnly = entry.dayAndTime.split(" ").firstOrNull() ?: ""
+            ReadOnlyField("Day", dayOnly, inputBgColor, onDayTimeFieldClick)
+            Spacer(Modifier.height(15.dp))
+            ReadOnlyField("Time Slot", entry.duration, inputBgColor, onDurationFieldClick)
+            Spacer(Modifier.height(30.dp))
+        }
+
+        item {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(15.dp)) {
+                Button(
+                    onClick = onSave,
+                    modifier = Modifier.weight(1f).height(55.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB58B43)),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Default.Check, null); Spacer(Modifier.width(8.dp)); Text("SAVE")
+                }
+                Button(
+                    onClick = onCancel,
+                    modifier = Modifier.weight(1f).height(55.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("CANCEL", color = Color.White)
+                }
+            }
+            Spacer(Modifier.height(15.dp))
+            Button(
+                onClick = onDelete,
+                modifier = Modifier.fillMaxWidth().height(55.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3B30)),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Icon(Icons.Default.Delete, null, tint = Color.White)
+                Spacer(Modifier.width(8.dp)); Text("DELETE ENTRY", fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(40.dp))
+        }
+    }
+}
+
+@Composable
+fun ReadOnlyField(label: String, value: String, bgColor: Color, onClick: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text(label, color = Color.White, fontSize = 14.sp)
+        Surface(
+            modifier = Modifier.fillMaxWidth().height(50.dp),
+            onClick = onClick,
+            color = bgColor,
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.padding(horizontal = 16.dp)) {
+                Text(text = value, color = Color.Black)
+            }
+        }
     }
 }

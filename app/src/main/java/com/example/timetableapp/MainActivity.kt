@@ -21,8 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-import com.example.timetableapp.EditTimetable.EditTimetableScreen
-import com.example.timetableapp.EditTimetable.EditSelectionScreen
+import com.example.timetableapp.edittimetable.EditTimetableScreen
 import com.example.timetableapp.homepage.HomepageInterface
 import com.example.timetableapp.SubjectView.SubjectInterface
 import com.example.timetableapp.generatetable.GenerateTimetableInterface
@@ -32,7 +31,7 @@ data class TimetableEntry(
     val subject: String,
     val lecturer: String,
     val duration: String,
-    val dayAndTime: String, // Format: "MON 08.00"
+    val dayAndTime: String, // Format: "SUN 07.30"
     val iconRes: Int? = null
 )
 
@@ -57,13 +56,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            var entryToEdit by remember { mutableStateOf<TimetableEntry?>(null) }
-            var editIndex by remember { mutableIntStateOf(-1) }
-
             // --- HELPER FUNCTION FOR VALIDATION ---
-            fun isSlotTaken(newDayAndTime: String, currentIndex: Int = -1): Boolean {
-                return userSchedule.filterIndexed { index, _ -> index != currentIndex }
-                    .any { it.dayAndTime.uppercase().trim() == newDayAndTime.uppercase().trim() }
+            fun isSlotTaken(newDayAndTime: String, currentEntry: TimetableEntry? = null): Boolean {
+                return userSchedule.any {
+                    it.dayAndTime.uppercase().trim() == newDayAndTime.uppercase().trim() && it != currentEntry
+                }
             }
 
             Box(modifier = Modifier.fillMaxSize()) {
@@ -89,7 +86,7 @@ class MainActivity : ComponentActivity() {
                                 isDarkMode = isDarkMode,
                                 onDarkModeToggle = { isDarkMode = !isDarkMode },
                                 onGenerateNavClick = { currentScreen = "generate" },
-                                onEditNavClick = { currentScreen = "edit_selection" },
+                                onEditNavClick = { currentScreen = "edit" },
                                 onSubjectNavClick = { currentScreen = "subject" },
                                 onTimetableClick = { currentScreen = "view_timetable" },
                                 onResetConfirm = {
@@ -101,71 +98,48 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         "generate" -> {
-                            // UPDATED: Pass existingSchedule to enable slot filtering
                             GenerateTimetableInterface(
                                 onBackClick = { currentScreen = "home" },
                                 existingSchedule = userSchedule.toList(),
                                 onAddEntries = { newEntries ->
-                                    // Secondary check for safety
                                     val conflicts = newEntries.filter { isSlotTaken(it.dayAndTime) }
-
                                     if (conflicts.isNotEmpty()) {
-                                        val conflictNames = conflicts.joinToString(", ") { it.dayAndTime }
-                                        Toast.makeText(context, "Error: $conflictNames already taken!", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "Conflict: Some slots already taken!", Toast.LENGTH_LONG).show()
                                     } else {
                                         userSchedule.addAll(newEntries)
                                         storage.saveSchedule(userSchedule.toList())
-                                        Toast.makeText(context, "Added ${newEntries.size} slots successfully!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Added successfully!", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             )
                         }
-                        "edit_selection" -> {
-                            EditSelectionScreen(
-                                userSchedule = userSchedule.toList(),
-                                onEntrySelected = { index, entry ->
-                                    editIndex = index
-                                    entryToEdit = entry
-                                    currentScreen = "edit"
-                                },
-                                onDeleteEntry = { index ->
-                                    if (index in userSchedule.indices) {
-                                        userSchedule.removeAt(index)
-                                        storage.saveSchedule(userSchedule.toList())
-                                        Toast.makeText(context, "Entry deleted", Toast.LENGTH_SHORT).show()
-                                    }
-                                },
-                                onBack = { currentScreen = "home" }
-                            )
-                        }
                         "edit" -> {
-                            val currentEntry = entryToEdit
-                            if (currentEntry != null) {
-                                EditTimetableScreen(
-                                    entryToEdit = currentEntry,
-                                    onUpdateClick = { updatedEntry ->
-                                        if (isSlotTaken(updatedEntry.dayAndTime, editIndex)) {
-                                            Toast.makeText(context, "Conflict with another entry!", Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            if (editIndex in userSchedule.indices) {
-                                                userSchedule[editIndex] = updatedEntry
-                                                storage.saveSchedule(userSchedule.toList())
-                                                entryToEdit = null
-                                                editIndex = -1
-                                                currentScreen = "view_timetable"
-                                                Toast.makeText(context, "Updated Successfully!", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                    },
-                                    onCancelClick = {
-                                        entryToEdit = null
-                                        editIndex = -1
-                                        currentScreen = "edit_selection"
+                            EditTimetableScreen(
+                                scheduleData = userSchedule.toList(),
+                                onUpdateClick = { updatedEntry ->
+                                    // Logic to find and update the entry
+                                    val index = userSchedule.indexOfFirst {
+                                        // Match by original content if day/subject changed
+                                        it.dayAndTime == updatedEntry.dayAndTime || it.subject == updatedEntry.subject
                                     }
-                                )
-                            } else {
-                                currentScreen = "home"
-                            }
+
+                                    if (index != -1) {
+                                        userSchedule[index] = updatedEntry
+                                        storage.saveSchedule(userSchedule.toList())
+                                        Toast.makeText(context, "Changes Saved!", Toast.LENGTH_SHORT).show()
+                                        currentScreen = "view_timetable"
+                                    }
+                                },
+                                // FIXED: Added missing onDeleteClick parameter
+                                onDeleteClick = { entryToDelete ->
+                                    userSchedule.remove(entryToDelete)
+                                    storage.saveSchedule(userSchedule.toList())
+                                    Toast.makeText(context, "Entry Deleted", Toast.LENGTH_SHORT).show()
+                                    // If list is empty, return home, otherwise stay to edit more
+                                    if (userSchedule.isEmpty()) currentScreen = "home"
+                                },
+                                onCancelClick = { currentScreen = "home" }
+                            )
                         }
                         "subject" -> {
                             SubjectInterface(onBackClick = { currentScreen = "home" })

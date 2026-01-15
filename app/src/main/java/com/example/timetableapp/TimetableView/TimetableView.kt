@@ -102,7 +102,7 @@ fun TimetableViewScreen(
 fun WeeklyTableLayout(scheduleData: List<TimetableEntry>) {
     val days = listOf("TIME", "SUN", "MON", "TUE", "WED", "THU")
     val allSlots = listOf(
-        "7.30-8.00", "8.00-8.30", "8.30-9.00", "9.00-9.30", "9.30-10.00",
+        "7.30-8.00", "8.00-8.30", "8.30-9.00", "9.00-9.30", "9.30-10.00","10.00-10.30",
         "10.30-11.00", "11.00-11.30", "11.30-12.00", "12.00-12.30", "12.30-1.00"
     )
 

@@ -102,7 +102,7 @@ fun EditTimetableScreen(
             }
 
             4 -> {
-                val times = listOf("7.30-8.00", "8.00-8.30", "8.30-9.00", "9.00-9.30", "9.30-10.00",
+                val times = listOf("7.30-8.00", "8.00-8.30", "8.30-9.00", "9.00-9.30", "9.30-10.00","10.00-10.30",
                     "10.30-11.00", "11.00-11.30", "11.30-12.00", "12.00-12.30", "12.30-1.00")
                 EditSelectionContainer(title = "Select Time", onBack = { currentStep = 2 }) {
                     items(times) { t ->

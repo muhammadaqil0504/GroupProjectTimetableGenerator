@@ -1,7 +1,6 @@
 package com.example.timetableapp.generatetable
 
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,16 +17,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.timetableapp.TimetableEntry
-import com.example.timetableapp.R
 
 @Composable
 fun GenerateTimetableInterface(
@@ -48,12 +44,15 @@ fun GenerateTimetableInterface(
     val selectedDays = remember { mutableStateListOf<String>() }
 
     val timeSlots = listOf(
-        "7.30-8.00", "8.00-8.30", "8.30-9.00", "9.00-9.30", "9.30-10.00",
+        "7.30-8.00", "8.00-8.30", "8.30-9.00", "9.00-9.30", "9.30-10.00", "10.00-10.30",
         "10.30-11.00", "11.00-11.30", "11.30-12.00", "12.00-12.30", "12.30-1.00"
     )
     val selectedTimes = remember { mutableStateListOf<String>() }
 
-    // --- AVAILABILITY LOGIC ---
+    // Logic to check if subject is special (No teacher needed)
+    val isSpecialSubject = selectedSubject.uppercase() == "REHAT" ||
+            selectedSubject.uppercase() == "PERHIMPUNAN"
+
     fun isSlotAvailable(time: String): Boolean {
         if (selectedDays.isEmpty()) return true
         val occupiedDaysCount = selectedDays.count { day ->
@@ -83,7 +82,11 @@ fun GenerateTimetableInterface(
             1 -> SubjectListScreen(
                 onSubjectSelected = { subject ->
                     selectedSubject = subject
-                    if (subject.uppercase() == "REHAT") teacherName = "-"
+                    if (subject.uppercase() == "REHAT" || subject.uppercase() == "PERHIMPUNAN") {
+                        teacherName = "-"
+                    } else if (teacherName == "-") {
+                        teacherName = ""
+                    }
                     currentStep = 2
                 },
                 onBack = { currentStep = 0 }
@@ -99,7 +102,7 @@ fun GenerateTimetableInterface(
                     Text("Schedule for $selectedSubject", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
 
                     Spacer(Modifier.height(20.dp))
-                    Text("1. Select Days (Sun-Thu):", color = Color.White, fontSize = 14.sp)
+                    Text("1. Select Days:", color = Color.White, fontSize = 14.sp)
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 10.dp)) {
                         daysList.chunked(3).forEach { rowDays ->
@@ -140,15 +143,13 @@ fun GenerateTimetableInterface(
                             val newEntries = mutableListOf<TimetableEntry>()
                             selectedDays.forEach { day ->
                                 selectedTimes.forEach { time ->
-                                    val isSpecificDayFree = !existingSchedule.any { entry ->
+                                    val isFree = !existingSchedule.any { entry ->
                                         val parts = entry.dayAndTime.split(" ")
                                         val eDay = parts.firstOrNull()?.uppercase()?.trim() ?: ""
                                         val eTime = parts.lastOrNull()?.trim() ?: ""
-                                        val d = day.uppercase().trim()
-                                        (d == eDay || d.startsWith(eDay) || eDay.startsWith(d)) && eTime == time
+                                        (day.uppercase().trim() == eDay) && eTime == time
                                     }
-                                    if (isSpecificDayFree) {
-                                        // FIXED: Using Named Arguments to prevent type mismatch
+                                    if (isFree) {
                                         newEntries.add(
                                             TimetableEntry(
                                                 subject = selectedSubject,
@@ -163,10 +164,10 @@ fun GenerateTimetableInterface(
                             }
                             if (newEntries.isNotEmpty()) {
                                 onAddEntries(newEntries)
-                                Toast.makeText(context, "Added ${newEntries.size} slots!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Saved ${newEntries.size} slots!", Toast.LENGTH_SHORT).show()
                                 resetForm()
                             } else {
-                                Toast.makeText(context, "Slots already taken on these days!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Slots taken!", Toast.LENGTH_SHORT).show()
                             }
                         } else {
                             Toast.makeText(context, "Pick day and time", Toast.LENGTH_SHORT).show()
@@ -190,13 +191,13 @@ fun GenerateTimetableInterface(
                     Text("Teacher Name", color = Color.White, modifier = Modifier.padding(top = 10.dp))
                     TextField(
                         value = teacherName,
-                        onValueChange = { if (selectedSubject.uppercase() != "REHAT") teacherName = it },
+                        onValueChange = { if (!isSpecialSubject) teacherName = it },
                         modifier = Modifier.fillMaxWidth().height(55.dp),
-                        enabled = selectedSubject.uppercase() != "REHAT",
+                        enabled = !isSpecialSubject,
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = inputBgColor,
                             unfocusedContainerColor = inputBgColor,
-                            disabledContainerColor = Color.LightGray.copy(alpha = 0.5f)
+                            disabledContainerColor = Color.Gray.copy(alpha = 0.4f)
                         ),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
@@ -219,36 +220,24 @@ fun GenerateTimetableInterface(
     }
 }
 
-// --- REUSABLE COMPONENTS (Chips and Buttons) ---
+// --- HELPERS (Keep these the same) ---
 @Composable
 fun DayChip(day: String, isSelected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
-        modifier = modifier
-            .height(45.dp)
-            .background(if (isSelected) Color(0xFFB58B43) else Color.White, RoundedCornerShape(8.dp))
-            .clickable { onClick() }
-            .border(1.dp, if (isSelected) Color.White else Color.Black, RoundedCornerShape(8.dp)),
+        modifier = modifier.height(45.dp).background(if (isSelected) Color(0xFFB58B43) else Color.White, RoundedCornerShape(8.dp))
+            .clickable { onClick() }.border(1.dp, if (isSelected) Color.White else Color.Black, RoundedCornerShape(8.dp)),
         contentAlignment = Alignment.Center
-    ) {
-        Text(text = day, color = if (isSelected) Color.White else Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-    }
+    ) { Text(text = day, color = if (isSelected) Color.White else Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold) }
 }
 
 @Composable
 fun TimeChip(time: String, isSelected: Boolean, isAvailable: Boolean, onClick: () -> Unit) {
-    val bgColor = when {
-        !isAvailable -> Color.Gray.copy(alpha = 0.5f)
-        isSelected -> Color(0xFFB58B43)
-        else -> Color(0xFFF5E6D3)
-    }
+    val bgColor = when { !isAvailable -> Color.Gray.copy(alpha = 0.5f); isSelected -> Color(0xFFB58B43); else -> Color(0xFFF5E6D3) }
     Box(
         modifier = Modifier.fillMaxWidth().height(45.dp).background(bgColor, RoundedCornerShape(8.dp))
-            .clickable(enabled = isAvailable) { onClick() }
-            .border(if (isSelected) 1.dp else 0.dp, Color.White, RoundedCornerShape(8.dp)),
+            .clickable(enabled = isAvailable) { onClick() }.border(if (isSelected) 1.dp else 0.dp, Color.White, RoundedCornerShape(8.dp)),
         contentAlignment = Alignment.Center
-    ) {
-        Text(text = if (isAvailable) time else "TAKEN", fontSize = 12.sp, color = if (isSelected || !isAvailable) Color.White else Color.Black)
-    }
+    ) { Text(text = if (isAvailable) time else "TAKEN", fontSize = 12.sp, color = if (isSelected || !isAvailable) Color.White else Color.Black) }
 }
 
 @Composable
